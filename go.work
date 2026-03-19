@@ -1,12 +1,10 @@
 go 1.26.1
 
 use (
-	./charting
 	./generic_http
 	./helpers
 	./load_gen
 	./pacer
-	./recorder
 	./sqs_perf
 	./term
 	./test_server
