@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"helpers/charting"
-	"pacer"
 )
 
 var ErrNotFound = errors.New("Not Found")
@@ -55,12 +54,12 @@ type ApiHttpClient struct {
 
 	config HttpConfig
 
-	pacer      *pacer.Pacer
+	pacer      *Pacer
 	recorder   *Recorder
 	httpClient *http.Client
 }
 
-func NewApiHttpClient(ctx context.Context, config HttpConfig, recorder *Recorder, pacer *pacer.Pacer) (*ApiHttpClient, error) {
+func NewApiHttpClient(ctx context.Context, config HttpConfig, recorder *Recorder, pacer *Pacer) (*ApiHttpClient, error) {
 	a := &ApiHttpClient{
 		ctx: ctx,
 
@@ -137,7 +136,7 @@ func (a *ApiHttpClient) Worker(requests chan Request) error {
 			break
 		default:
 			if err := a.pacer.Get(); err != nil {
-				if errors.Is(pacer.PacerCompleted, err) {
+				if errors.Is(PacerCompleted, err) {
 					done = true
 				} else {
 					slog.Error("worker", "error", err)
@@ -160,7 +159,7 @@ func RunHttp(ctx context.Context, config HttpConfig, requests HttpRequests) erro
 
 	var wg sync.WaitGroup
 
-	pacer, err := pacer.NewPacer(config.PacerConfig())
+	pacer, err := NewPacer(config.GetPacerConfig())
 	if err != nil {
 		return err
 	}

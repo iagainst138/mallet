@@ -1,4 +1,4 @@
-package pacer
+package helpers
 
 import (
 	"context"
@@ -31,7 +31,7 @@ type Pacer struct {
 	ch        chan int
 }
 
-func NewPacer(config Config) (*Pacer, error) {
+func NewPacer(config PacerConfig) (*Pacer, error) {
 	p := &Pacer{
 		loopError: nil,
 		ch:        make(chan int, 0),

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
-
-	"pacer"
 )
 
 var ConfigError = errors.New("config is invalid, refer to logs")
@@ -28,8 +26,18 @@ type SecurityConfig struct {
 	InsecureSkipVerify bool `flag:"k" usage:"do not verify TLS"`
 }
 
+type PacerConfig struct {
+	EPS      int64         `flag:"e" default:"1000"`
+	Duration time.Duration `flag:"d" default:"8s"`
+	RampUp   time.Duration `flag:"r" default:"2s"`
+}
+
+func (c PacerConfig) GetPacerConfig() PacerConfig {
+	return c
+}
+
 type PerfConfig struct {
-	pacer.Config
+	PacerConfig
 	RecorderConfig
 	SecurityConfig
 	BaseConfig
@@ -49,7 +57,7 @@ type HttpConfig struct {
 func GetHttpConfig() HttpConfig {
 	return HttpConfig{
 		PerfConfig: PerfConfig{
-			Config: pacer.Config{
+			PacerConfig: PacerConfig{
 				Duration: time.Minute,
 				RampUp:   time.Second * 1,
 				EPS:      1000,
@@ -85,7 +93,7 @@ type SqsConfig struct {
 func GetSqsConfig() SqsConfig {
 	return SqsConfig{
 		PerfConfig: PerfConfig{
-			Config: pacer.Config{
+			PacerConfig: PacerConfig{
 				Duration: time.Second * 8,
 				RampUp:   time.Second * 1,
 				EPS:      100,
