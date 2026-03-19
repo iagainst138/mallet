@@ -5,6 +5,5 @@ use (
 	./helpers
 	./load_gen
 	./sqs_perf
-	./term
 	./test_server
 )
