@@ -4,7 +4,6 @@ use (
 	./charting
 	./generic_http
 	./helpers
-	./latency
 	./load_gen
 	./pacer
 	./recorder

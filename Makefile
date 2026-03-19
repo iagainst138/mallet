@@ -41,11 +41,7 @@ build_har_tool:
 	go build -o har-tool har/main.go
 
 
-build_latency_tool:
-	go build -o latency-tool ./latency/cmd/latency.go
-
-
-func_tests: certs ${VENV_PATH} build build_test_server build_latency_tool
+func_tests: certs ${VENV_PATH} build build_test_server
 	${VENV_ACTIVATE} && cd testing/tests && pytest --maxfail 1 .
 
 
