@@ -23,7 +23,9 @@ def run_server(with_errors=False):
     cmd = [server_path]
     if with_errors:
         cmd.append("-with-errors")
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=LOAD_GEN_DIR)
+    p = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=LOAD_GEN_DIR
+    )
 
     try:
         ok = False

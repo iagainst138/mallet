@@ -12,7 +12,12 @@ HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
 @pytest.mark.parametrize(
     "service, with_errors, args",
     [
-        ["http", False, HTTP_ARGS + ["-g", os.path.join(helpers.LOAD_GEN_DIR, "scripts", "generator.py")]],
+        [
+            "http",
+            False,
+            HTTP_ARGS
+            + ["-g", os.path.join(helpers.LOAD_GEN_DIR, "scripts", "generator.py")],
+        ],
     ],
 )
 def test_queries(service, with_errors, args):

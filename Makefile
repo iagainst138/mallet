@@ -100,5 +100,5 @@ profile_cpu:
 
 
 ruff:
-	ruff format
-	ruff check --fix
+	${VENV_ACTIVATE} && ruff format
+	${VENV_ACTIVATE} && ruff check --fix
