@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"pacer"
-	"recorder"
 )
 
 var ConfigError = errors.New("config is invalid, refer to logs")
@@ -31,7 +30,7 @@ type SecurityConfig struct {
 
 type PerfConfig struct {
 	pacer.Config
-	recorder.RecorderConfig
+	RecorderConfig
 	SecurityConfig
 	BaseConfig
 }
@@ -56,7 +55,7 @@ func GetHttpConfig() HttpConfig {
 				EPS:      1000,
 			},
 
-			RecorderConfig: recorder.RecorderConfig{
+			RecorderConfig: RecorderConfig{
 				CreateStatement:        apiCreateStatement,
 				SummaryStatement:       summaryStatement,
 				InsertLatencyStatement: apiInsertStatement,
@@ -92,7 +91,7 @@ func GetSqsConfig() SqsConfig {
 				EPS:      100,
 			},
 
-			RecorderConfig: recorder.RecorderConfig{
+			RecorderConfig: RecorderConfig{
 				CreateStatement:        apiCreateStatement,
 				SummaryStatement:       summaryStatement,
 				InsertLatencyStatement: apiInsertStatement,
@@ -129,7 +128,7 @@ func (s SqsConfig) Validate() bool {
 	return ok
 }
 
-func Validator(config PerfConfig) recorder.ValidationFunc {
+func Validator(config PerfConfig) ValidationFunc {
 	expectedRowCount := int(config.Duration.Seconds()) / int(config.WindowSize.Seconds())
 
 	errorQuery := "select sum(error) from results;"
@@ -147,7 +146,7 @@ func Validator(config PerfConfig) recorder.ValidationFunc {
 	return func(db *sql.DB, percentiles map[float64]time.Duration) ([]string, error) {
 		var average float64
 		var errorCount int64
-		reasons := recorder.NewReasons()
+		reasons := NewReasons()
 		ok := true
 
 		row := db.QueryRow(errorQuery)
@@ -195,4 +194,37 @@ func Validator(config PerfConfig) recorder.ValidationFunc {
 
 		return nil, nil
 	}
+}
+
+// We don't expose these config options as flags.
+type RecorderConfig struct {
+	CreateStatement        string `flag:""`
+	SummaryStatement       string `flag:""`
+	InsertLatencyStatement string `flag:""`
+	MinQuery               string `flag:""`
+	MaxQuery               string `flag:""`
+	WindowQuery            string `flag:""`
+	RollupQuery            string `flag:""`
+	MinRollupQuery         string `flag:""`
+	RollupInsertStatement  string `flag:""`
+	DeleteQuery            string `flag:""`
+	OldRowsQuery           string `flag:""`
+
+	WindowSize time.Duration `flag:"w" default:"2s"`
+
+	DBPath string `flag:"db-path"`
+
+	ChartPath string `flag:"chart" default:"" usage:"path to write chart to"`
+}
+
+func (r RecorderConfig) getDBPath() string {
+	if r.DBPath != "" {
+		return r.DBPath
+	}
+
+	return ":memory:"
+}
+
+func (c RecorderConfig) GetRecorderConfig() RecorderConfig {
+	return c
 }

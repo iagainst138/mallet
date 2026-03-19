@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"charting"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -14,8 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"helpers/charting"
 	"pacer"
-	"recorder"
 )
 
 var ErrNotFound = errors.New("Not Found")
@@ -57,11 +56,11 @@ type ApiHttpClient struct {
 	config HttpConfig
 
 	pacer      *pacer.Pacer
-	recorder   *recorder.Recorder
+	recorder   *Recorder
 	httpClient *http.Client
 }
 
-func NewApiHttpClient(ctx context.Context, config HttpConfig, recorder *recorder.Recorder, pacer *pacer.Pacer) (*ApiHttpClient, error) {
+func NewApiHttpClient(ctx context.Context, config HttpConfig, recorder *Recorder, pacer *pacer.Pacer) (*ApiHttpClient, error) {
 	a := &ApiHttpClient{
 		ctx: ctx,
 
@@ -166,7 +165,7 @@ func RunHttp(ctx context.Context, config HttpConfig, requests HttpRequests) erro
 		return err
 	}
 
-	recorder, err := recorder.NewRecorder(config.GetRecorderConfig(), recorder.ApiTableResults, charting.WriteApiChart, Validator(config.PerfConfig))
+	recorder, err := NewRecorder(config.GetRecorderConfig(), ApiTableResults, charting.WriteApiChart, Validator(config.PerfConfig))
 	if err != nil {
 		return err
 	}

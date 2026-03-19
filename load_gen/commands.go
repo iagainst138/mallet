@@ -15,8 +15,6 @@ import (
 
 	"ghttp"
 	"helpers"
-	"recorder"
-	"sqsperf"
 )
 
 type runFunc func(ctx context.Context, cmd string) error
@@ -60,13 +58,13 @@ func runSqs(ctx context.Context, cmd string) error {
 		return time.Now().Format(time.RFC3339), nil
 	}
 
-	s, err := sqsperf.NewSqsPerf(ctx, config, messageFunc)
+	s, err := helpers.NewSqsPerf(ctx, config, messageFunc)
 	if err != nil {
 		return err
 	}
 
 	summary, err := s.Run(ctx)
-	if err == nil || errors.Is(err, recorder.ErrTargetsNotMet) {
+	if err == nil || errors.Is(err, helpers.ErrTargetsNotMet) {
 		fmt.Println(summary)
 	}
 
