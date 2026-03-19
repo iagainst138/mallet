@@ -50,7 +50,7 @@ func TestDeadline(t *testing.T) {
 
 			passDuration := tc.pacerDuration + bufferTime
 
-			p, err := NewPacer(Config{Duration: tc.pacerDuration, EPS: tc.eps})
+			p, err := NewPacer(PacerConfig{Duration: tc.pacerDuration, EPS: tc.eps})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -114,7 +114,7 @@ func TestDeadline(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
-	p, err := NewPacer(Config{Duration: 10 * time.Second, EPS: 10})
+	p, err := NewPacer(PacerConfig{Duration: 10 * time.Second, EPS: 10})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestCancel(t *testing.T) {
 func TestRampup(t *testing.T) {
 	pacerDuration := time.Second * 6
 
-	p, err := NewPacer(Config{
+	p, err := NewPacer(PacerConfig{
 		Duration: pacerDuration,
 		RampUp:   pacerDuration / 2,
 		EPS:      1000,

@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-GO_UNIT_TEST_FLAGS=
+GO_UNIT_TEST_FLAGS=-v
 GO_TEST_CMD=go test ${GO_UNIT_TEST_FLAGS} .
 
 VENV_NAME=.venv
@@ -14,7 +14,7 @@ build:
 
 
 test_pacer:
-	cd pacer && ${GO_TEST_CMD}
+	cd helpers && ${GO_TEST_CMD}
 
 
 unit_tests: test_pacer
