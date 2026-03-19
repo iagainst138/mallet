@@ -1,0 +1,102 @@
+package loadgen
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"log/slog"
+	"maps"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"slices"
+	"time"
+
+	"ghttp"
+	"helpers"
+	"recorder"
+	"sqsperf"
+)
+
+type runFunc func(ctx context.Context, cmd string) error
+
+type commandMap map[string]runFunc
+
+func (c commandMap) supportedCommands() []string {
+	supportedCommands := make([]string, len(c))
+	i := 0
+	for k := range maps.Keys(c) {
+		supportedCommands[i] = k
+		i++
+	}
+	slices.Sort(supportedCommands)
+
+	return supportedCommands
+}
+
+func runHttp(ctx context.Context, cmd string) error {
+	config := helpers.GetHttpConfig()
+
+	if err := helpers.ParseFlags(cmd, &config); err != nil {
+		return err
+	}
+
+	return ghttp.Run(ctx, config)
+}
+
+func runSqs(ctx context.Context, cmd string) error {
+	config := helpers.GetSqsConfig()
+
+	if err := helpers.ParseFlags(cmd, &config); err != nil {
+		return err
+	}
+
+	if !config.Validate() {
+		return helpers.ConfigError
+	}
+
+	messageFunc := func() (string, error) {
+		return time.Now().Format(time.RFC3339), nil
+	}
+
+	s, err := sqsperf.NewSqsPerf(ctx, config, messageFunc)
+	if err != nil {
+		return err
+	}
+
+	summary, err := s.Run(ctx)
+	if err == nil || errors.Is(err, recorder.ErrTargetsNotMet) {
+		fmt.Println(summary)
+	}
+
+	return err
+}
+
+func Run(ctx context.Context) error {
+	m := commandMap{
+		"http": runHttp,
+		"sqs":  runSqs,
+	}
+
+	if len(os.Args) < 2 {
+		return fmt.Errorf("insufficient args - expected >= 2 got %d, please specify a command from %v", len(os.Args), m.supportedCommands())
+	}
+
+	cmd := os.Args[1]
+
+	f, exists := m[cmd]
+	if !exists {
+		return fmt.Errorf("unknown command %q, supported commands are %v", cmd, m.supportedCommands())
+	}
+
+	if os.Getenv("ENABLE_PROFILING") == "1" {
+		log.Println("Enabling pprof for profiling")
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
+	}
+
+	slog.Info("starting", "command", cmd)
+	return f(ctx, cmd)
+}
