@@ -4,6 +4,5 @@ use (
 	./generic_http
 	./helpers
 	./load_gen
-	./sqs_perf
 	./test_server
 )

@@ -2,7 +2,6 @@ package loadgen
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -11,7 +10,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"slices"
-	"time"
 
 	"ghttp"
 	"helpers"
@@ -43,38 +41,9 @@ func runHttp(ctx context.Context, cmd string) error {
 	return ghttp.Run(ctx, config)
 }
 
-func runSqs(ctx context.Context, cmd string) error {
-	config := helpers.GetSqsConfig()
-
-	if err := helpers.ParseFlags(cmd, &config); err != nil {
-		return err
-	}
-
-	if !config.Validate() {
-		return helpers.ConfigError
-	}
-
-	messageFunc := func() (string, error) {
-		return time.Now().Format(time.RFC3339), nil
-	}
-
-	s, err := helpers.NewSqsPerf(ctx, config, messageFunc)
-	if err != nil {
-		return err
-	}
-
-	summary, err := s.Run(ctx)
-	if err == nil || errors.Is(err, helpers.ErrTargetsNotMet) {
-		fmt.Println(summary)
-	}
-
-	return err
-}
-
 func Run(ctx context.Context) error {
 	m := commandMap{
 		"http": runHttp,
-		"sqs":  runSqs,
 	}
 
 	if len(os.Args) < 2 {
