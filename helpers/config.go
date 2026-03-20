@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 )
 
@@ -78,62 +77,6 @@ func GetHttpConfig() HttpConfig {
 			},
 		},
 	}
-}
-
-type SqsConfig struct {
-	PerfConfig
-
-	Queue       string        `flag:"Q" usage:"sqs queue"`
-	AwsRegion   string        `flag:"A" usage:"aws region"`
-	SendTimeout time.Duration `flag:"t" usage:"timeout" default:"1s"`
-
-	LocalStackEndpoint string `flag:"L" usage:"localstack endpoint"`
-}
-
-func GetSqsConfig() SqsConfig {
-	return SqsConfig{
-		PerfConfig: PerfConfig{
-			PacerConfig: PacerConfig{
-				Duration: time.Second * 8,
-				RampUp:   time.Second * 1,
-				EPS:      100,
-			},
-
-			RecorderConfig: RecorderConfig{
-				CreateStatement:        apiCreateStatement,
-				SummaryStatement:       summaryStatement,
-				InsertLatencyStatement: apiInsertStatement,
-				MinQuery:               minQuery,
-				MaxQuery:               maxQuery,
-				RollupQuery:            apiRollupQuery,
-				DeleteQuery:            deleteStatement,
-				MinRollupQuery:         minRollupQuery,
-				OldRowsQuery:           oldRowsQuery,
-
-				WindowSize: 1 * time.Second,
-			},
-		},
-	}
-}
-
-func (s SqsConfig) UsesLocalStack() bool {
-	return s.LocalStackEndpoint != ""
-}
-
-func (s SqsConfig) Validate() bool {
-	ok := true
-
-	if s.Queue == "" {
-		ok = false
-		slog.Error("config.Validate", "msg", "No queue specified")
-	}
-
-	if s.AwsRegion == "" {
-		ok = false
-		slog.Error("config.Validate", "msg", "No aws region specified")
-	}
-
-	return ok
 }
 
 func Validator(config PerfConfig) ValidationFunc {
