@@ -17,7 +17,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	_ "github.com/mattn/go-sqlite3"
 
-	"helpers/charting"
+	"loadgen/helpers/charting"
 )
 
 var histogramMax = time.Duration(30 * time.Second).Nanoseconds()

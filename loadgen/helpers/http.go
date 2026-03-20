@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"helpers/charting"
+	"loadgen/helpers/charting"
 )
 
 var ErrNotFound = errors.New("Not Found")

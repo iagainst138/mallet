@@ -11,7 +11,7 @@ import (
 	"os"
 	"slices"
 
-	"helpers"
+	"loadgen/helpers"
 )
 
 type runFunc func(ctx context.Context, cmd string) error
