@@ -152,7 +152,7 @@ func (a *ApiHttpClient) Worker(requests chan Request) error {
 	return nil
 }
 
-func RunHttp(ctx context.Context, config HttpConfig, requests HttpRequests) error {
+func StartHttp(ctx context.Context, config HttpConfig, requests HttpRequests) error {
 	if requests == nil {
 		return errors.New("HttpRequests channel is nil")
 	}

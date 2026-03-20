@@ -11,7 +11,6 @@ import (
 	"os"
 	"slices"
 
-	"ghttp"
 	"helpers"
 )
 
@@ -38,7 +37,7 @@ func runHttp(ctx context.Context, cmd string) error {
 		return err
 	}
 
-	return ghttp.Run(ctx, config)
+	return helpers.RunHttp(ctx, config)
 }
 
 func Run(ctx context.Context) error {

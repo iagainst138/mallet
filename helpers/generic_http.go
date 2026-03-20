@@ -1,18 +1,16 @@
-package ghttp
+package helpers
 
 import (
 	"context"
 	"fmt"
 	"log"
 	"net/http"
-
-	"helpers"
 )
 
-func generateRequests(ctx context.Context, config helpers.HttpConfig) (helpers.HttpRequests, error) {
-	requests := make(helpers.HttpRequests)
+func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, error) {
+	requests := make(HttpRequests)
 
-	loader, err := helpers.NewLoader(ctx, config.GeneratorPath)
+	loader, err := NewLoader(ctx, config.GeneratorPath)
 	if err != nil {
 		return requests, err
 	}
@@ -44,7 +42,7 @@ func generateRequests(ctx context.Context, config helpers.HttpConfig) (helpers.H
 				if err != nil {
 					log.Println(err)
 				} else {
-					requests <- helpers.Request{Req: req, ParseFunc: helpers.ParseJson}
+					requests <- Request{Req: req, ParseFunc: ParseJson}
 				}
 			}
 		}
@@ -53,11 +51,11 @@ func generateRequests(ctx context.Context, config helpers.HttpConfig) (helpers.H
 	return requests, nil
 }
 
-func Run(ctx context.Context, config helpers.HttpConfig) error {
+func RunHttp(ctx context.Context, config HttpConfig) error {
 	requests, err := generateRequests(ctx, config)
 	if err != nil {
 		return err
 	}
 
-	return helpers.RunHttp(ctx, config, requests)
+	return StartHttp(ctx, config, requests)
 }

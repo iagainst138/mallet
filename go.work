@@ -1,7 +1,6 @@
 go 1.26.1
 
 use (
-	./generic_http
 	./helpers
 	./load_gen
 	./test_server
