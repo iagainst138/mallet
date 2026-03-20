@@ -3,4 +3,4 @@ test-server
 testing/tests/__pycache__/
 testing/.venv/
 certs
-load_gen/load-gen
+loadgen/load-gen
