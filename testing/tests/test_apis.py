@@ -22,7 +22,7 @@ HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
 )
 def test_queries(service, with_errors, args):
     cmd = [
-        os.path.join(helpers.LOAD_GEN_DIR, "load_gen", "load-gen"),
+        os.path.join(helpers.LOAD_GEN_DIR, "loadgen", "load-gen"),
         service,
         "-k",
         "-n",
