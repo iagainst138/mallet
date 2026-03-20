@@ -2,6 +2,6 @@ go 1.26.1
 
 use (
 	./helpers
-	./load_gen
+	./loadgen
 	./test_server
 )

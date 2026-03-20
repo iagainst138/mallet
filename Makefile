@@ -9,7 +9,7 @@ VENV_ACTIVATE=source ${VENV_PATH}/bin/activate
 
 
 build:
-	cd load_gen && go build -o load-gen -ldflags="-s -w" cmd/main.go
+	cd loadgen && go build -o load-gen -ldflags="-s -w" cmd/main.go
 	@echo ""
 
 
@@ -88,7 +88,7 @@ clean:
 	rm -rf \
 		certs \
 		${VENV_PATH} \
-		load_gen/load-gen
+		loadgen/load-gen
 
 
 profile_mem:
