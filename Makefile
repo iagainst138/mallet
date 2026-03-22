@@ -9,6 +9,7 @@ VENV_ACTIVATE=source ${VENV_PATH}/bin/activate
 
 BIN_PATH=/tmp/mallet.out
 
+
 build:
 	cd mallet && go build -o ${BIN_PATH} -ldflags="-s -w" cmd/main.go
 	@echo ""
@@ -21,6 +22,20 @@ unit_tests:
 
 unit_tests_short:
 	make unit_tests GO_UNIT_TEST_FLAGS="-v -short"
+
+
+run_local_http: build
+	ENABLE_PROFILING=1 ${BIN_PATH} \
+		http \
+		-a https://127.0.0.1:8080 \
+		-g ./scripts/generator.py \
+		-k \
+		-n 200 \
+		-e 1000 \
+		-chart /tmp/chart.html \
+		-d 8s \
+		-r 1s \
+		-w 1s
 
 
 build_test_server:
