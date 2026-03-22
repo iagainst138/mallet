@@ -16,6 +16,7 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 	}
 
 	go func() {
+		defer func() { close(requests) }()
 		done := false
 
 		for !done {
