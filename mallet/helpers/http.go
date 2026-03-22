@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"mallet/helpers/charting"
+	"mallet/pacer"
 )
 
 var ErrNotFound = errors.New("Not Found")
@@ -54,12 +55,12 @@ type ApiHttpClient struct {
 
 	config HttpConfig
 
-	pacer      *Pacer
+	pacer      *pacer.Pacer
 	recorder   *Recorder
 	httpClient *http.Client
 }
 
-func NewApiHttpClient(ctx context.Context, config HttpConfig, recorder *Recorder, pacer *Pacer) (*ApiHttpClient, error) {
+func NewApiHttpClient(ctx context.Context, config HttpConfig, recorder *Recorder, pacer *pacer.Pacer) (*ApiHttpClient, error) {
 	a := &ApiHttpClient{
 		ctx: ctx,
 
@@ -136,7 +137,7 @@ func (a *ApiHttpClient) Worker(requests chan Request) error {
 			break
 		default:
 			if err := a.pacer.Get(); err != nil {
-				if errors.Is(PacerCompleted, err) {
+				if errors.Is(pacer.PacerCompleted, err) {
 					done = true
 				} else {
 					slog.Error("worker", "error", err)
@@ -159,7 +160,7 @@ func StartHttp(ctx context.Context, config HttpConfig, requests HttpRequests) er
 
 	var wg sync.WaitGroup
 
-	pacer, err := NewPacer(config.GetPacerConfig())
+	pacer, err := pacer.NewPacer(config.GetPacerConfig())
 	if err != nil {
 		return err
 	}

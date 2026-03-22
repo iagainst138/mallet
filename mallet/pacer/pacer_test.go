@@ -1,4 +1,4 @@
-package helpers
+package pacer
 
 import (
 	"context"
