@@ -34,6 +34,7 @@ func_tests: certs ${VENV_PATH} build build_test_server
 
 ${VENV_PATH}:
 	cd testing && python3 -m venv ${VENV_NAME}
+	make venv
 
 
 venv: ${VENV_PATH}
@@ -86,6 +87,6 @@ profile_cpu:
 	go tool pprof -http :8001 -no_browser http://127.0.0.1:6060/debug/pprof/profile?seconds=20
 
 
-ruff:
+ruff: ${VENV_PATH}
 	${VENV_ACTIVATE} && ruff format
 	${VENV_ACTIVATE} && ruff check --fix
