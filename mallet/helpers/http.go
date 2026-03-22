@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"mallet/helpers/charting"
+	"mallet/charting"
 	"mallet/pacer"
 )
 

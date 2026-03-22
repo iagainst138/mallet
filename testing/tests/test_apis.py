@@ -1,9 +1,9 @@
 import os
 import re
 
-import helpers
-
 import pytest
+
+import helpers
 
 HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
 
@@ -20,6 +20,11 @@ HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
     ],
 )
 def test_queries(service, with_errors, args):
+    chart_path = "/tmp/test-chart.html"
+
+    if os.path.exists(chart_path):
+        os.remove(chart_path)
+
     cmd = [
         "/tmp/mallet.out",
         service,
@@ -34,6 +39,8 @@ def test_queries(service, with_errors, args):
         "1s",
         "-e",
         "100",
+        "-chart",
+        chart_path,
     ]
     cmd += args
 
@@ -47,3 +54,5 @@ def test_queries(service, with_errors, args):
         else:
             assert r.returncode == 0, r.error_msg
             assert regex.findall(r.stdout), r.error_msg
+
+    assert os.path.exists(chart_path)
