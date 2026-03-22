@@ -2,9 +2,8 @@ import os
 import re
 
 import helpers
-import pytest
 
-PERF_DIR = os.path.join(helpers.LOAD_GEN_DIR, "perf")
+import pytest
 
 HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
 
@@ -22,7 +21,7 @@ HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
 )
 def test_queries(service, with_errors, args):
     cmd = [
-        os.path.join(helpers.LOAD_GEN_DIR, "loadgen", "load-gen"),
+        "/tmp/mallet.out",
         service,
         "-k",
         "-n",

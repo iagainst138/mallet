@@ -1,31 +1,29 @@
 SHELL=/bin/bash
 
 GO_UNIT_TEST_FLAGS=-v
-GO_TEST_CMD=go test ${GO_UNIT_TEST_FLAGS} .
+GO_TEST_CMD=go test ${GO_UNIT_TEST_FLAGS} ./...
 
 VENV_NAME=.venv
 VENV_PATH=testing/${VENV_NAME}
 VENV_ACTIVATE=source ${VENV_PATH}/bin/activate
 
+BIN_PATH=/tmp/mallet.out
 
 build:
-	cd loadgen && go build -o load-gen -ldflags="-s -w" cmd/main.go
+	cd mallet && go build -o ${BIN_PATH} -ldflags="-s -w" cmd/main.go
 	@echo ""
 
 
 test_pacer:
-	cd helpers && ${GO_TEST_CMD}
+	cd mallet && ${GO_TEST_CMD}
 
 
 unit_tests: test_pacer
+	@echo -e "\n*** UNIT TESTS PASSED ***\n"
 
 
 unit_tests_short:
 	make unit_tests GO_UNIT_TEST_FLAGS="-v -short"
-
-
-test:
-	echo "*** placeholder for ci job ***"
 
 
 #build_linux:
@@ -43,6 +41,8 @@ build_har_tool:
 
 func_tests: certs ${VENV_PATH} build build_test_server
 	${VENV_ACTIVATE} && cd testing/tests && pytest --maxfail 1 .
+	@echo -e "\n*** FUNC TESTS PASSED ***\n"
+
 
 
 ${VENV_PATH}:
@@ -88,7 +88,7 @@ clean:
 	rm -rf \
 		certs \
 		${VENV_PATH} \
-		loadgen/load-gen
+		${BIN_PATH}
 
 
 profile_mem:

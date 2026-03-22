@@ -1,4 +1,4 @@
-package loadgen
+package mallet
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"os"
 	"slices"
 
-	"loadgen/helpers"
+	"mallet/helpers"
 )
 
 type runFunc func(ctx context.Context, cmd string) error

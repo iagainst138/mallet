@@ -1,4 +1,4 @@
-module loadgen
+module mallet
 
 go 1.26.1
 
