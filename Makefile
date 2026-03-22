@@ -8,6 +8,7 @@ VENV_PATH=testing/${VENV_NAME}
 VENV_ACTIVATE=source ${VENV_PATH}/bin/activate
 
 BIN_PATH=/tmp/mallet.out
+SERVER_BIN_PATH=/tmp/test-server.out
 
 
 build:
@@ -39,7 +40,7 @@ run_local_http: build
 
 
 build_test_server:
-	cd test_server && go build -o ../test-server cmd/server/main.go
+	cd test_server && go build -o ${SERVER_BIN_PATH} cmd/server/main.go
 
 
 func_tests: certs ${VENV_PATH} build build_test_server
@@ -57,11 +58,11 @@ venv: ${VENV_PATH}
 
 
 run_test_server: certs build_test_server
-	./test-server
+	${SERVER_BIN_PATH}
 
 
 run_test_server_with_errors: certs build_test_server
-	./test-server -with-errors -delay 100ms
+	${SERVER_BIN_PATH} -with-errors -delay 100ms
 
 
 image: build
@@ -91,7 +92,8 @@ clean:
 	rm -rf \
 		certs \
 		${VENV_PATH} \
-		${BIN_PATH}
+		${BIN_PATH} \
+		${SERVER_BIN_PATH}
 
 
 profile_mem:
