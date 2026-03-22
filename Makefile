@@ -14,11 +14,8 @@ build:
 	@echo ""
 
 
-test_pacer:
+unit_tests:
 	cd mallet && ${GO_TEST_CMD}
-
-
-unit_tests: test_pacer
 	@echo -e "\n*** UNIT TESTS PASSED ***\n"
 
 
@@ -26,23 +23,13 @@ unit_tests_short:
 	make unit_tests GO_UNIT_TEST_FLAGS="-v -short"
 
 
-#build_linux:
-#	CC="$$(./scripts/determine-c-compiler.sh)" \
-#		GOOS=linux GOARCH=amd64 CGO_ENABLED=1 make build
-
-
 build_test_server:
 	cd test_server && go build -o ../test-server cmd/server/main.go
-
-
-build_har_tool:
-	go build -o har-tool har/main.go
 
 
 func_tests: certs ${VENV_PATH} build build_test_server
 	${VENV_ACTIVATE} && cd testing/tests && pytest --maxfail 1 .
 	@echo -e "\n*** FUNC TESTS PASSED ***\n"
-
 
 
 ${VENV_PATH}:
