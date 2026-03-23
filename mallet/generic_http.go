@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 )
 
 func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, error) {
@@ -13,6 +14,18 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 	loader, err := NewLoader(ctx, config.GeneratorPath)
 	if err != nil {
 		return nil, err
+	}
+
+	supportedMethods := []string{
+		http.MethodGet,
+		http.MethodHead,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodConnect,
+		http.MethodOptions,
+		http.MethodTrace,
 	}
 
 	go func() {
@@ -30,10 +43,7 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 					panic(err)
 				}
 
-				switch query.Method {
-				case http.MethodGet:
-					// ok
-				default:
+				if !slices.Contains(supportedMethods, query.Method) {
 					panic(fmt.Errorf("unsupported HTTP method %q", query.Method))
 				}
 

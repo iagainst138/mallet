@@ -65,7 +65,7 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 		w.Write(readyString)
 	})
 
-	http.HandleFunc("GET /api/", h.responseWrapper([]byte("{}"))) // TODO remove
+	http.HandleFunc("/test/", h.responseWrapper([]byte("{}")))
 
 	log.Printf("http server listening on %s with a delay of %s", listenAddr, delay)
 

@@ -6,8 +6,12 @@ i = 0
 while True:
     r = {
         "method": "GET",
-        "query": "/api/",
+        "query": "/test/",
         "body": "some data",
     }
+
+    if i%10 == 0:
+        r["method"] = "POST"
+
     print(json.dumps(r))
     i += 1
