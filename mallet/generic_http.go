@@ -12,7 +12,7 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 
 	loader, err := NewLoader(ctx, config.GeneratorPath)
 	if err != nil {
-		return requests, err
+		return nil, err
 	}
 
 	go func() {
@@ -23,7 +23,6 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 			select {
 			case <-ctx.Done():
 				done = true
-				break
 
 			default:
 				query, err := loader.Get(ctx)

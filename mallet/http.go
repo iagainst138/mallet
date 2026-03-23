@@ -134,7 +134,6 @@ func (a *ApiHttpClient) Worker(requests chan HttpRequest) error {
 		select {
 		case <-a.ctx.Done():
 			done = true
-			break
 		default:
 			if err := a.pacer.Get(); err != nil {
 				if errors.Is(pacer.PacerCompleted, err) {
