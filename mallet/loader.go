@@ -16,7 +16,7 @@ var additionalEnvVars = []string{
 	"PYTHONUNBUFFERED=1",
 }
 
-type RequestX struct {
+type Request struct {
 	Method string `json:"method"`
 	Query  string `json:"query"`
 	Body   string `json:"body"`
@@ -28,13 +28,13 @@ type Loader struct {
 
 	ready bool
 
-	c chan RequestX
+	c chan Request
 }
 
 func NewLoader(ctx context.Context, command string) (*Loader, error) {
 	l := &Loader{
 		Command: command,
-		c:       make(chan RequestX, requestBufferSize),
+		c:       make(chan Request, requestBufferSize),
 	}
 
 	go func() {
@@ -59,7 +59,7 @@ func (l *Loader) Ready() error {
 	return nil
 }
 
-func (l *Loader) Get(ctx context.Context) (RequestX, error) {
+func (l *Loader) Get(ctx context.Context) (Request, error) {
 	t := time.NewTimer(time.Millisecond * 10)
 
 	select {
@@ -73,9 +73,6 @@ func (l *Loader) Get(ctx context.Context) (RequestX, error) {
 func (l *Loader) Run(ctx context.Context) error {
 	env := os.Environ()
 
-	/*cmd := exec.CommandContext(
-	ctx,
-	*/
 	cmd := exec.Command(
 		l.Command,
 		l.Args...,
@@ -92,7 +89,6 @@ func (l *Loader) Run(ctx context.Context) error {
 
 	r := bufio.NewReader(stdout)
 
-	n := 0
 	for {
 		b, err := r.ReadBytes('\n')
 		if err != nil {
@@ -106,15 +102,12 @@ func (l *Loader) Run(ctx context.Context) error {
 
 		requestBytes := b[:len(b)-1]
 
-		var r RequestX
+		var r Request
 		if err := json.Unmarshal(requestBytes, &r); err != nil {
 			log.Fatal(err)
 		}
 
 		l.c <- r
-		n++
-		if n == requestBufferSize {
-			l.ready = true
-		}
+		l.ready = true
 	}
 }
