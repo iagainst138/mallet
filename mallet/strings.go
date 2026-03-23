@@ -1,4 +1,4 @@
-package helpers
+package mallet
 
 import (
 	"math/rand/v2"

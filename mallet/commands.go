@@ -10,8 +10,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"slices"
-
-	"mallet/helpers"
 )
 
 type runFunc func(ctx context.Context, cmd string) error
@@ -31,13 +29,13 @@ func (c commandMap) supportedCommands() []string {
 }
 
 func runHttp(ctx context.Context, cmd string) error {
-	config := helpers.GetHttpConfig()
+	config := GetHttpConfig()
 
-	if err := helpers.ParseFlags(cmd, &config); err != nil {
+	if err := ParseFlags(cmd, &config); err != nil {
 		return err
 	}
 
-	return helpers.RunHttp(ctx, config)
+	return RunHttp(ctx, config)
 }
 
 func Run(ctx context.Context) error {

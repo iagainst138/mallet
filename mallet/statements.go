@@ -1,4 +1,4 @@
-package helpers
+package mallet
 
 const (
 	summaryStatement = "SELECT * FROM results ORDER BY started ASC;"
