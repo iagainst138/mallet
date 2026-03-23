@@ -18,6 +18,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"mallet/charting"
+	"mallet/term"
 )
 
 var histogramMax = time.Duration(30 * time.Second).Nanoseconds()
@@ -133,7 +134,7 @@ func NewRecorder(config RecorderConfig, tableFunc TableFunc, chartFunc charting.
 func (r *Recorder) RecordLatency(start, finish time.Time, args ...any) {
 	duration := finish.Sub(start).Nanoseconds()
 
-	Fprintf(os.Stderr, "p95:%s | latency:%s",
+	term.Fprintf(os.Stderr, "p95:%s | latency:%s",
 		time.Duration(r.histogram.ValueAtPercentile(95)),
 		finish.Sub(start),
 	)
