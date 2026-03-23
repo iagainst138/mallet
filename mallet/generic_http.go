@@ -43,7 +43,7 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 				if err != nil {
 					log.Println(err)
 				} else {
-					requests <- Request{Req: req, ParseFunc: ParseJson}
+					requests <- HttpRequest{Req: req, ParseFunc: ParseJson}
 				}
 			}
 		}

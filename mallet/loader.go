@@ -105,7 +105,6 @@ func (l *Loader) Run(ctx context.Context) error {
 		}
 
 		requestBytes := b[:len(b)-1]
-		//fmt.Printf("\nGO: %s\n", requestBytes)
 
 		var r RequestX
 		if err := json.Unmarshal(requestBytes, &r); err != nil {

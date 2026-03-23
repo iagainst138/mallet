@@ -25,30 +25,30 @@ func HttpError(w http.ResponseWriter, status int) {
 
 type ParseFunc func(b []byte) error
 
-type Request struct {
+type HttpRequest struct {
 	Req       *http.Request
 	ParseFunc ParseFunc
 }
 
-func (r Request) URL() string {
+func (r HttpRequest) URL() string {
 	return r.Req.URL.String()
 }
 
-func (r Request) HasAuthorizationHeader() bool {
+func (r HttpRequest) HasAuthorizationHeader() bool {
 	if r.Req == nil {
 		return false
 	}
 	return r.Req.Header.Get("Authorization") != ""
 }
 
-func (r Request) AuthorizationHeader() string {
+func (r HttpRequest) AuthorizationHeader() string {
 	if r.Req == nil {
 		return ""
 	}
 	return r.Req.Header.Get("Authorization")
 }
 
-type HttpRequests chan Request
+type HttpRequests chan HttpRequest
 
 type ApiHttpClient struct {
 	ctx context.Context
@@ -74,7 +74,7 @@ func NewApiHttpClient(ctx context.Context, config HttpConfig, recorder *Recorder
 	return a, nil
 }
 
-func (a *ApiHttpClient) Do(req Request) error {
+func (a *ApiHttpClient) Do(req HttpRequest) error {
 	var numErrors int
 
 	started := time.Now()
@@ -124,7 +124,7 @@ func (a *ApiHttpClient) Do(req Request) error {
 	return nil
 }
 
-func (a *ApiHttpClient) Worker(requests chan Request) error {
+func (a *ApiHttpClient) Worker(requests chan HttpRequest) error {
 	done := false
 
 	for !done {
