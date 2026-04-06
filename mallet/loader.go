@@ -23,7 +23,7 @@ var (
 	EmptyRequestBuffer = errors.New("empty request buffer")
 )
 
-type Ring struct {
+type RequestBuffer struct {
 	sync.Mutex
 
 	size       int
@@ -32,14 +32,14 @@ type Ring struct {
 	writeIndex int
 }
 
-func NewRing(size int) *Ring {
-	return &Ring{
+func NewRequestBuffer(size int) *RequestBuffer {
+	return &RequestBuffer{
 		size:     size,
 		requests: make([]Request, 0, size),
 	}
 }
 
-func (r *Ring) Add(req Request) {
+func (r *RequestBuffer) Add(req Request) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -55,7 +55,7 @@ func (r *Ring) Add(req Request) {
 	}
 }
 
-func (r *Ring) Get() (Request, bool) {
+func (r *RequestBuffer) Get() (Request, bool) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -70,7 +70,7 @@ func (r *Ring) Get() (Request, bool) {
 	return r.requests[r.readIndex], true
 }
 
-func (r *Ring) hasEntries() bool {
+func (r *RequestBuffer) hasEntries() bool {
 	return r != nil && len(r.requests) > 0
 }
 
@@ -86,7 +86,7 @@ type Loader struct {
 	Command string
 	Args    []string
 
-	requestBuffer *Ring
+	requestBuffer *RequestBuffer
 
 	ready bool
 
@@ -97,7 +97,7 @@ func NewLoader(ctx context.Context, command string) (*Loader, error) {
 	l := &Loader{
 		Command:       command,
 		c:             make(chan Request, requestBufferSize),
-		requestBuffer: NewRing(200),
+		requestBuffer: NewRequestBuffer(200),
 	}
 
 	go func() {
