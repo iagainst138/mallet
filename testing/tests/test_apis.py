@@ -17,6 +17,26 @@ HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
             HTTP_ARGS
             + ["-g", os.path.join(helpers.LOAD_GEN_DIR, "scripts", "generator.py")],
         ],
+        [
+            "http",
+            False,
+            HTTP_ARGS
+            + [
+                "-g",
+                os.path.join(
+                    helpers.LOAD_GEN_DIR, "scripts", "generator-with-delay.py"
+                ),
+            ],
+        ],
+        [
+            "http",
+            False,
+            HTTP_ARGS
+            + [
+                "-g",
+                os.path.join(helpers.LOAD_GEN_DIR, "scripts", "generator-one-shot.py"),
+            ],
+        ],
     ],
 )
 def test_queries(service, with_errors, args):

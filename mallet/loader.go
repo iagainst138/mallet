@@ -4,27 +4,89 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"log"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 )
 
 const requestBufferSize = 1000
 
-var additionalEnvVars = []string{
-	"PYTHONUNBUFFERED=1",
+var (
+	additionalEnvVars = []string{
+		"PYTHONUNBUFFERED=1",
+	}
+
+	EmptyRequestBuffer = errors.New("empty request buffer")
+)
+
+type Ring struct {
+	sync.Mutex
+
+	size       int
+	requests   []Request
+	readIndex  int
+	writeIndex int
+}
+
+func NewRing(size int) *Ring {
+	return &Ring{
+		size:     size,
+		requests: make([]Request, 0, size),
+	}
+}
+
+func (r *Ring) Add(req Request) {
+	r.Lock()
+	defer r.Unlock()
+
+	if len(r.requests) < r.size {
+		r.requests = append(r.requests, req)
+	} else {
+		r.requests[r.writeIndex] = req
+	}
+
+	r.writeIndex++
+	if r.writeIndex == r.size {
+		r.writeIndex = 0
+	}
+}
+
+func (r *Ring) Get() (Request, bool) {
+	r.Lock()
+	defer r.Unlock()
+
+	if len(r.requests) == 0 {
+		return Request{}, false
+	}
+
+	r.readIndex++
+	if r.readIndex == len(r.requests) {
+		r.readIndex = 0
+	}
+	return r.requests[r.readIndex], true
+}
+
+func (r *Ring) hasEntries() bool {
+	return r != nil && len(r.requests) > 0
 }
 
 type Request struct {
 	Method string `json:"method"`
 	Query  string `json:"query"`
 	Body   string `json:"body"`
+
+	Unique bool `json:"unique"`
 }
 
 type Loader struct {
 	Command string
 	Args    []string
+
+	requestBuffer *Ring
 
 	ready bool
 
@@ -33,8 +95,9 @@ type Loader struct {
 
 func NewLoader(ctx context.Context, command string) (*Loader, error) {
 	l := &Loader{
-		Command: command,
-		c:       make(chan Request, requestBufferSize),
+		Command:       command,
+		c:             make(chan Request, requestBufferSize),
+		requestBuffer: NewRing(200),
 	}
 
 	go func() {
@@ -60,13 +123,15 @@ func (l *Loader) Ready() error {
 }
 
 func (l *Loader) Get(ctx context.Context) (Request, error) {
-	t := time.NewTimer(time.Millisecond * 10)
-
 	select {
 	case r := <-l.c:
 		return r, nil
-	case <-t.C:
-		panic("timed out gettig data")
+	default:
+		if r, ok := l.requestBuffer.Get(); ok {
+			return r, nil
+		} else {
+			return Request{}, EmptyRequestBuffer
+		}
 	}
 }
 
@@ -92,11 +157,9 @@ func (l *Loader) Run(ctx context.Context) error {
 	for {
 		b, err := r.ReadBytes('\n')
 		if err != nil {
-			//if errors.Is(err, io.EOF) {
-			//	return nil
-			//}
-			//log.Printf("error reading data: %s", err)
-			//continue
+			if errors.Is(err, io.EOF) && l.requestBuffer.hasEntries() {
+				return nil
+			}
 			return err
 		}
 
@@ -108,6 +171,9 @@ func (l *Loader) Run(ctx context.Context) error {
 		}
 
 		l.c <- r
-		l.ready = true
+		if !r.Unique {
+			l.ready = true
+			l.requestBuffer.Add(r)
+		}
 	}
 }

@@ -10,7 +10,7 @@ while True:
         "body": "some data",
     }
 
-    if i%10 == 0:
+    if i % 10 == 0:
         r["method"] = "POST"
 
     print(json.dumps(r))
