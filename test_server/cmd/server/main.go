@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"log/slog"
 	"time"
 
 	"tserver"
@@ -23,7 +23,7 @@ func main() {
 	flag.Parse()
 
 	if enableErrors {
-		log.Println("servers will return errors")
+		slog.Info("servers will return errors")
 	}
 
 	c := make(chan error)

@@ -3,7 +3,7 @@ package mallet
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"slices"
 )
@@ -50,7 +50,7 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 				url := config.Addr + query.Query
 				req, err := http.NewRequestWithContext(ctx, query.Method, url, nil)
 				if err != nil {
-					log.Println(err)
+					slog.Error("requests", "error", err)
 				} else {
 					requests <- HttpRequest{Req: req, ParseFunc: ParseJson}
 				}

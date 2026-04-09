@@ -3,7 +3,6 @@ package mallet
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -55,9 +54,10 @@ func Run(ctx context.Context) error {
 	}
 
 	if os.Getenv("ENABLE_PROFILING") == "1" {
-		log.Println("Enabling pprof for profiling")
+		profileAddr := "localhost:6060"
+		slog.Info("pprof", "addr", profileAddr)
 		go func() {
-			log.Println(http.ListenAndServe("localhost:6060", nil))
+			slog.Error("profile server", "error", http.ListenAndServe(profileAddr, nil))
 		}()
 	}
 

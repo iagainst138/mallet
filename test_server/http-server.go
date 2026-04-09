@@ -1,7 +1,7 @@
 package tserver
 
 import (
-	"log"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"regexp"
@@ -67,7 +67,7 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 
 	http.HandleFunc("/test/", h.responseWrapper([]byte("{}")))
 
-	log.Printf("http server listening on %s with a delay of %s", listenAddr, delay)
+	slog.Info("http server", "addr", listenAddr, "delay", delay)
 
 	return http.ListenAndServeTLS(listenAddr, "certs/cert.pem", "certs/key.pem", nil)
 }

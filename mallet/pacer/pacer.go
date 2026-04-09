@@ -3,7 +3,8 @@ package pacer
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
+	"log/slog"
 	"math"
 	"sync"
 	"time"
@@ -148,7 +149,7 @@ func (p *Pacer) Validate() bool {
 	ok := true
 
 	if p.EPS < 1 {
-		log.Printf("error: Pacer.EPS < 1:%d", p.EPS)
+		slog.Error("pacer", "error", fmt.Sprintf("bad EPS:%d", p.EPS))
 		ok = false
 	}
 

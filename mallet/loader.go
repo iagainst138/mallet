@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"sync"
@@ -146,10 +146,12 @@ func (l *Loader) Run(ctx context.Context) error {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("loader", "error", err)
+		os.Exit(1)
 	}
 	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
+		slog.Error("loader", "error", err)
+		os.Exit(1)
 	}
 
 	r := bufio.NewReader(stdout)
@@ -167,7 +169,8 @@ func (l *Loader) Run(ctx context.Context) error {
 
 		var r Request
 		if err := json.Unmarshal(requestBytes, &r); err != nil {
-			log.Fatal(err)
+			slog.Error("loader", "error", err)
+			os.Exit(1)
 		}
 
 		l.c <- r

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"strings"
@@ -166,7 +165,7 @@ func (r *Recorder) RecordLatency(start, finish time.Time, args ...any) {
 
 		if r.shouldRollup() {
 			if err := r.movingRollup(); err != nil {
-				log.Println(err)
+				slog.Error("rollup", "error", err)
 			}
 			r.lastRollup = time.Now()
 		}
