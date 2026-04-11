@@ -37,13 +37,21 @@ HTTP_ARGS = ["-a", "https://127.0.0.1:8080"]
                 os.path.join(helpers.LOAD_GEN_DIR, "scripts", "generator-one-shot.py"),
             ],
         ],
+        [
+            "http",
+            True,
+            HTTP_ARGS
+            + ["-g", os.path.join(helpers.LOAD_GEN_DIR, "scripts", "generator.py")],
+        ],
     ],
 )
 def test_queries(service, with_errors, args):
     chart_path = "/tmp/test-chart.html"
+    logfile_path = "/tmp/test-logfile.log"
 
-    if os.path.exists(chart_path):
-        os.remove(chart_path)
+    for p in [chart_path, logfile_path]:
+        if os.path.exists(p):
+            os.remove(p)
 
     cmd = [
         "/tmp/mallet.out",
@@ -61,6 +69,8 @@ def test_queries(service, with_errors, args):
         "100",
         "-chart",
         chart_path,
+        "-logfile",
+        logfile_path,
     ]
     cmd += args
 
@@ -76,3 +86,12 @@ def test_queries(service, with_errors, args):
             assert regex.findall(r.stdout), r.error_msg
 
     assert os.path.exists(chart_path)
+    assert os.path.exists(logfile_path)
+
+    with open(logfile_path) as f:
+        log_lines = f.readlines()
+
+    if with_errors:
+        assert len(log_lines) > 0
+    else:
+        assert len(log_lines) == 0

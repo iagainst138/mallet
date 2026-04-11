@@ -21,6 +21,8 @@ type BaseConfig struct {
 
 	DecreaseThresholdPercentage float64       `flag:"decrease" default:"1.0" usage:"acceptable % decrease allowed in throughput"`
 	P95Latency                  time.Duration `flag:"p95" default:"1s" usage:"passing p95 latency"`
+
+	LogFile string `flag:"logfile" default:"" usage:"path to log file"`
 }
 
 type SecurityConfig struct {

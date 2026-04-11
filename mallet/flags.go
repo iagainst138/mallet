@@ -2,6 +2,7 @@ package mallet
 
 import (
 	"flag"
+	"log/slog"
 	"os"
 
 	"github.com/itzg/go-flagsfiller"
@@ -16,6 +17,16 @@ func ParseFlags(cmd string, config any) error {
 	}
 
 	f.Parse(os.Args[2:])
+
+	if logFile := f.Lookup("logfile"); logFile != nil {
+		if logFile.Value.String() != "" {
+			logger, _, err := SetupDualLogger(logFile.Value.String())
+			if err != nil {
+				return err
+			}
+			slog.SetDefault(logger)
+		}
+	}
 
 	return nil
 }
