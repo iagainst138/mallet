@@ -133,9 +133,11 @@ func NewRecorder(config RecorderConfig, tableFunc TableFunc, chartFunc charting.
 func (r *Recorder) RecordLatency(start, finish time.Time, args ...any) {
 	duration := finish.Sub(start).Nanoseconds()
 
+	p95 := r.histogram.ValueAtPercentile(95)
+
 	stats.Update(
 		finish.Sub(start),
-		time.Duration(r.histogram.ValueAtPercentile(95)),
+		time.Duration(p95),
 	)
 
 	r.Lock()
@@ -145,7 +147,7 @@ func (r *Recorder) RecordLatency(start, finish time.Time, args ...any) {
 
 	records := r.recordPool.Get().([]any)
 	records = records[:0]
-	records = append(records, start.UnixNano(), duration, duration, r.histogram.ValueAtPercentile(95))
+	records = append(records, start.UnixNano(), duration, duration, p95)
 	if len(args) > 0 {
 		records = append(records, args...)
 	}

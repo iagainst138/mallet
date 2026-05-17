@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	writeInterval = time.Millisecond * 300
+	WriteInterval = time.Millisecond * 500
 
 	previousLine = "\x1b[1F"
 	clearLine    = "\r\x1b[2K"
@@ -23,7 +23,7 @@ var (
 func Fprintf(f *os.File, s string, args ...any) {
 	shouldWrite := false
 
-	if time.Since(lastWrite) < writeInterval {
+	if time.Since(lastWrite) < WriteInterval {
 		return
 	}
 
