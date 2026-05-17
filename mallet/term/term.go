@@ -14,8 +14,6 @@ const (
 )
 
 var (
-	ShowUpdates = true // TODO evaluate
-
 	stdErrIsTerminal bool
 	stdOutIsTerminal bool
 
@@ -23,10 +21,6 @@ var (
 )
 
 func Fprintf(f *os.File, s string, args ...any) {
-	if !ShowUpdates {
-		return
-	}
-
 	shouldWrite := false
 
 	if time.Since(lastWrite) < writeInterval {
@@ -48,10 +42,6 @@ func Fprintf(f *os.File, s string, args ...any) {
 }
 
 func Flush() {
-	if !ShowUpdates {
-		return
-	}
-
 	if stdErrIsTerminal {
 		fmt.Fprint(os.Stderr, previousLine)
 		fmt.Fprint(os.Stderr, clearLine)
