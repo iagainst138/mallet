@@ -7,11 +7,14 @@ while True:
     r = {
         "method": "GET",
         "query": "/test/",
-        "body": "some data",
     }
 
     if i % 10 == 0:
-        r["method"] = "POST"
+        r = {
+            "method": "POST",
+            "query": "/post-test/",
+            "body": "some data",
+        }
 
     print(json.dumps(r))
     i += 1

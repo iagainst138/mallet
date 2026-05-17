@@ -2,6 +2,7 @@ package mallet
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 const requestBufferSize = 1000
@@ -20,7 +22,7 @@ var (
 		"PYTHONUNBUFFERED=1",
 	}
 
-	EmptyRequestBuffer = errors.New("empty request buffer")
+	ErrEmptyRequestBuffer = errors.New("empty request buffer")
 )
 
 type RequestBuffer struct {
@@ -82,6 +84,13 @@ type Request struct {
 	Unique bool `json:"unique"`
 }
 
+func (r *Request) BodyBytes() io.Reader {
+	if len(r.Body) == 0 {
+		return nil
+	}
+	return bytes.NewBuffer(unsafe.Slice(unsafe.StringData(r.Body), len(r.Body)))
+}
+
 type Loader struct {
 	Command string
 	Args    []string
@@ -130,7 +139,7 @@ func (l *Loader) Get(ctx context.Context) (Request, error) {
 		if r, ok := l.requestBuffer.Get(); ok {
 			return r, nil
 		} else {
-			return Request{}, EmptyRequestBuffer
+			return Request{}, ErrEmptyRequestBuffer
 		}
 	}
 }

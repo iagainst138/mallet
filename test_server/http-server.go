@@ -1,6 +1,7 @@
 package tserver
 
 import (
+	"io"
 	"log/slog"
 	"math/rand"
 	"net/http"
@@ -8,7 +9,10 @@ import (
 	"time"
 )
 
-var readyString = []byte("ready\n")
+var (
+	okString    = []byte("OK\n")
+	readyString = []byte("ready\n")
+)
 
 type httpServer struct {
 	enableErrors bool
@@ -65,7 +69,21 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 		w.Write(readyString)
 	})
 
-	http.HandleFunc("/test/", h.responseWrapper([]byte("{}")))
+	http.HandleFunc("GET /test/", h.responseWrapper([]byte("{}")))
+
+	http.HandleFunc("POST /post-test/", func(w http.ResponseWriter, r *http.Request) {
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		defer r.Body.Close()
+
+		if len(b) == 0 {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		} else {
+			w.Write(okString)
+		}
+	})
 
 	slog.Info("http server", "addr", listenAddr, "delay", delay)
 

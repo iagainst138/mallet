@@ -48,7 +48,7 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 				}
 
 				url := config.Addr + query.Query
-				req, err := http.NewRequestWithContext(ctx, query.Method, url, nil)
+				req, err := http.NewRequestWithContext(ctx, query.Method, url, query.BodyBytes())
 				if err != nil {
 					slog.Error("requests", "error", err)
 				} else {

@@ -35,7 +35,7 @@ run_local_http: build
 		-e 1000 \
 		-chart /tmp/chart.html \
 		-logfile /tmp/mallet.log \
-		-d 8s \
+		-d 4s \
 		-r 1s \
 		-w 1s
 
