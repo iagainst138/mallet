@@ -6,10 +6,15 @@ import (
 	"time"
 )
 
-const writeInterval = time.Millisecond * 500
+const (
+	writeInterval = time.Millisecond * 300
+
+	previousLine = "\x1b[1F"
+	clearLine    = "\r\x1b[2K"
+)
 
 var (
-	ShowUpdates = false // TODO evaluate
+	ShowUpdates = true // TODO evaluate
 
 	stdErrIsTerminal bool
 	stdOutIsTerminal bool
@@ -37,17 +42,25 @@ func Fprintf(f *os.File, s string, args ...any) {
 
 	if shouldWrite {
 		update := fmt.Sprintf(s, args...)
-		fmt.Fprintf(f, "\r%s", update)
+		fmt.Fprintf(f, "%s%s%s\n", previousLine, clearLine, update)
 		lastWrite = time.Now()
 	}
 }
 
 func Flush() {
+	if !ShowUpdates {
+		return
+	}
+
 	if stdErrIsTerminal {
+		fmt.Fprint(os.Stderr, previousLine)
+		fmt.Fprint(os.Stderr, clearLine)
 		fmt.Fprint(os.Stderr, "\r")
 	}
 
 	if stdOutIsTerminal {
+		fmt.Fprint(os.Stdout, previousLine)
+		fmt.Fprint(os.Stdout, clearLine)
 		fmt.Fprint(os.Stdout, "\r")
 	}
 }

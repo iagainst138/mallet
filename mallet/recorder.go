@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -17,6 +16,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"mallet/charting"
+	"mallet/stats"
 	"mallet/term"
 )
 
@@ -133,9 +133,9 @@ func NewRecorder(config RecorderConfig, tableFunc TableFunc, chartFunc charting.
 func (r *Recorder) RecordLatency(start, finish time.Time, args ...any) {
 	duration := finish.Sub(start).Nanoseconds()
 
-	term.Fprintf(os.Stderr, "p95:%s | latency:%s",
-		time.Duration(r.histogram.ValueAtPercentile(95)),
+	stats.Update(
 		finish.Sub(start),
+		time.Duration(r.histogram.ValueAtPercentile(95)),
 	)
 
 	r.Lock()
@@ -231,6 +231,7 @@ func (r *Recorder) Summary() (string, error) {
 		}
 	}
 
+	term.Flush()
 	return s, nil
 }
 
