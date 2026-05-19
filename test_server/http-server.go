@@ -58,6 +58,21 @@ func (h *httpServer) responseWrapper(b []byte) http.HandlerFunc {
 	return h.wrap(f)
 }
 
+func handleRequestWithBody(w http.ResponseWriter, r *http.Request) {
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+	defer r.Body.Close()
+
+	if len(b) == 0 {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	} else {
+		w.Write(okString)
+	}
+
+}
+
 func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error {
 	h := httpServer{
 		enableErrors: enableErrors,
@@ -70,20 +85,8 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 	})
 
 	http.HandleFunc("GET /test/", h.responseWrapper([]byte("{}")))
-
-	http.HandleFunc("POST /post-test/", func(w http.ResponseWriter, r *http.Request) {
-		b, err := io.ReadAll(r.Body)
-		if err != nil {
-			panic(err)
-		}
-		defer r.Body.Close()
-
-		if len(b) == 0 {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		} else {
-			w.Write(okString)
-		}
-	})
+	http.HandleFunc("POST /post-test/", handleRequestWithBody)
+	http.HandleFunc("PUT /put-test/", handleRequestWithBody)
 
 	slog.Info("http server", "addr", listenAddr, "delay", delay)
 

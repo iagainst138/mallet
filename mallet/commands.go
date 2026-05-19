@@ -11,7 +11,7 @@ import (
 	"slices"
 )
 
-type runFunc func(ctx context.Context, cmd string) error
+type runFunc func(ctx context.Context, cmd string, args []string) error
 
 type commandMap map[string]runFunc
 
@@ -27,7 +27,7 @@ func (c commandMap) supportedCommands() []string {
 	return supportedCommands
 }
 
-func runHttp(ctx context.Context, cmd string) error {
+func runHttp(ctx context.Context, cmd string, args []string) error {
 	config := GetHttpConfig()
 
 	if err := ParseFlags(cmd, &config); err != nil {
@@ -62,5 +62,5 @@ func Run(ctx context.Context) error {
 	}
 
 	slog.Info("starting", "command", cmd)
-	return f(ctx, cmd)
+	return f(ctx, cmd, nil)
 }

@@ -102,9 +102,10 @@ type Loader struct {
 	c chan Request
 }
 
-func NewLoader(ctx context.Context, command string) (*Loader, error) {
+func NewLoader(ctx context.Context, command string, args []string) (*Loader, error) {
 	l := &Loader{
 		Command:       command,
+		Args:          args,
 		c:             make(chan Request, requestBufferSize),
 		requestBuffer: NewRequestBuffer(200),
 	}

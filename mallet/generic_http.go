@@ -11,7 +11,7 @@ import (
 func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, error) {
 	requests := make(HttpRequests)
 
-	loader, err := NewLoader(ctx, config.GeneratorPath)
+	loader, err := NewLoader(ctx, config.GeneratorPath, config.Args)
 	if err != nil {
 		return nil, err
 	}

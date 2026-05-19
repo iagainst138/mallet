@@ -37,7 +37,7 @@ run_local_http: build
 		-logfile /tmp/mallet.log \
 		-d 4s \
 		-r 1s \
-		-w 1s
+		-w 1s #-- -z xxxx
 
 
 build_test_server:

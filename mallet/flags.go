@@ -8,7 +8,7 @@ import (
 	"github.com/itzg/go-flagsfiller"
 )
 
-func ParseFlags(cmd string, config any) error {
+func ParseFlags(cmd string, config Config) error {
 	f := flag.NewFlagSet(cmd, flag.ExitOnError)
 
 	filler := flagsfiller.New()
@@ -27,6 +27,8 @@ func ParseFlags(cmd string, config any) error {
 			slog.SetDefault(logger)
 		}
 	}
+
+	config.SetArgs(f.Args())
 
 	return nil
 }

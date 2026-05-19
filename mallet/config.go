@@ -13,6 +13,10 @@ var ConfigError = errors.New("config is invalid, refer to logs")
 
 type CleanupFunc func() error
 
+type Config interface {
+	SetArgs([]string)
+}
+
 type BaseConfig struct {
 	Addr       string `flag:"a" usage:"address to connect to"`
 	NumClients int    `flag:"n" default:"500" usage:"number of test clients to use"`
@@ -23,6 +27,14 @@ type BaseConfig struct {
 	P95Latency                  time.Duration `flag:"p95" default:"1s" usage:"passing p95 latency"`
 
 	LogFile string `flag:"logfile" default:"" usage:"path to log file"`
+
+	GeneratorPath string `flag:"g" usage:"path to generator executable"`
+
+	Args []string
+}
+
+func (b *BaseConfig) SetArgs(args []string) {
+	b.Args = args
 }
 
 type SecurityConfig struct {
@@ -43,8 +55,6 @@ type HttpConfig struct {
 	ParseResponse bool `flag:"parse-response" usage:"parse response"`
 
 	HttpTimeout time.Duration `flag:"http-timeout" default:"5s" usage:"timeout for http calls"` // TODO fix if passing from perf.py
-
-	GeneratorPath string `flag:"g" usage:"path to generator executable"`
 }
 
 func GetHttpConfig() HttpConfig {
