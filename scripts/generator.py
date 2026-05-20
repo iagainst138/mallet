@@ -2,25 +2,34 @@
 
 import json
 
-i = 0
-while True:
-    r = {
+requests = [
+    {
         "method": "GET",
         "query": "/test/",
+    },
+    {
+        "method": "GET",
+        "query": "/args/?s=d",
+    },
+    {
+        "method": "GET",
+        "query": "/headers/?header=x-test&value=testing123",
+        "headers": {
+            "x-test": "testing123",
+        },
+    },
+    {
+        "method": "PUT",
+        "query": "/put-test/",
+        "body": "some data",
+    },
+    {
+        "method": "POST",
+        "query": "/post-test/",
+        "body": "some data",
     }
+]
 
-    if i % 20 == 0:
-        r = {
-            "method": "PUT",
-            "query": "/put-test/",
-            "body": "some data",
-        }
-    elif i % 10 == 0:
-        r = {
-            "method": "POST",
-            "query": "/post-test/",
-            "body": "some data",
-        }
-
-    print(json.dumps(r))
-    i += 1
+while True:
+    for r in requests:
+        print(json.dumps(r))

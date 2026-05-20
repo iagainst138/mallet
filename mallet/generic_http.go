@@ -52,6 +52,9 @@ func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, err
 				if err != nil {
 					slog.Error("requests", "error", err)
 				} else {
+					for k, v := range query.Header {
+						req.Header.Add(k, v)
+					}
 					requests <- HttpRequest{Req: req, ParseFunc: ParseJson}
 				}
 			}

@@ -77,9 +77,10 @@ func (r *RequestBuffer) hasEntries() bool {
 }
 
 type Request struct {
-	Method string `json:"method"`
-	Query  string `json:"query"`
-	Body   string `json:"body"`
+	Method string            `json:"method"`
+	Query  string            `json:"query"`
+	Body   string            `json:"body"`
+	Header map[string]string `json:"headers"`
 
 	Unique bool `json:"unique"`
 }

@@ -85,6 +85,41 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 	})
 
 	http.HandleFunc("GET /test/", h.responseWrapper([]byte("{}")))
+	http.HandleFunc("GET /args/", func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		} else if len(r.Form) == 0 {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		} else {
+			w.Write(okString)
+		}
+	})
+	http.HandleFunc("GET /headers/", func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		} else if len(r.Form) == 0 {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		} else {
+			header := r.Form.Get("header")
+			value := r.Form.Get("value")
+
+			if len(header) == 0 || len(value) == 0 {
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+
+			if r.Header.Get(header) != value {
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+
+			w.Write(okString)
+		}
+	})
 	http.HandleFunc("POST /post-test/", handleRequestWithBody)
 	http.HandleFunc("PUT /put-test/", handleRequestWithBody)
 
