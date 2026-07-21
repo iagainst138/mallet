@@ -199,6 +199,7 @@ func GetHttpClient(insecureSkipVerify bool) *http.Client {
 			//},
 			ForceAttemptHTTP2:     true,
 			MaxIdleConns:          1,
+			MaxConnsPerHost:       1,
 			IdleConnTimeout:       300 * time.Second,
 			TLSHandshakeTimeout:   5 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,

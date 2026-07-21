@@ -11,6 +11,9 @@ BIN_PATH=/tmp/mallet.out
 SERVER_BIN_PATH=/tmp/test-server.out
 
 
+pipeline: unit_tests func_tests
+
+
 build:
 	cd mallet && go build -o ${BIN_PATH} -ldflags="-s -w" cmd/main.go
 	@echo ""
@@ -68,9 +71,6 @@ run_test_server_with_errors: certs build_test_server
 
 image: build
 	docker build -t perf:0 .
-
-
-pipeline: unit_tests func_tests
 
 
 certs:
