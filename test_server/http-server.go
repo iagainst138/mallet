@@ -84,12 +84,14 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 		w.Write(readyString)
 	})
 
-	http.HandleFunc("GET /test/", h.responseWrapper([]byte("{}")))
+	http.HandleFunc("GET /test/", h.responseWrapper(okString))
 	http.HandleFunc("GET /args/", func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
-		} else if len(r.Form) == 0 {
+		}
+
+		if len(r.Form) == 0 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		} else {
