@@ -19,6 +19,13 @@ requests = [
         },
     },
     {
+        "method": "GET",
+        "query": "/with-auth/",
+        "headers": {
+            "Authorization": "Bearer xxx",
+        },
+    },
+    {
         "method": "PUT",
         "query": "/put-test/",
         "body": "some data",

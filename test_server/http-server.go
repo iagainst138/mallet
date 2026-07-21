@@ -34,12 +34,6 @@ func (h *httpServer) wrap(f http.HandlerFunc) http.HandlerFunc {
 	w := func(w http.ResponseWriter, r *http.Request) {
 		h.slowDown()
 
-		//authHeader := r.Header.Get("Authorization")
-		//if !h.authRegex.MatchString(authHeader) {
-		//	helpers.HttpError(w, http.StatusUnauthorized)
-		//	return
-		//}
-
 		if h.shouldError() {
 			http.Error(w, "injected failure", 599)
 		} else {
@@ -77,7 +71,7 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 	h := httpServer{
 		enableErrors: enableErrors,
 		delay:        delay.Nanoseconds(),
-		authRegex:    regexp.MustCompile("^[a-zA-Z]{1,20} .*"),
+		authRegex:    regexp.MustCompile("^Bearer .*"),
 	}
 
 	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +79,14 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 	})
 
 	http.HandleFunc("GET /test/", h.responseWrapper(okString))
+	http.HandleFunc("GET /with-auth/", func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if !h.authRegex.MatchString(authHeader) {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		w.Write(okString)
+	})
 	http.HandleFunc("GET /args/", func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)

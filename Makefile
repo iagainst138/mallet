@@ -34,13 +34,13 @@ run_local_http: build
 		-a https://127.0.0.1:8080 \
 		-g ./scripts/generator.py \
 		-k \
-		-n 200 \
+		-n 20 \
 		-e 1000 \
 		-chart /tmp/chart.html \
 		-logfile /tmp/mallet.log \
 		-d 4s \
 		-r 1s \
-		-w 1s #-- -z xxxx
+		-w 1s
 
 
 build_test_server:
@@ -98,11 +98,11 @@ clean:
 
 
 profile_mem:
-	go tool pprof -http :8001 -no_browser http://127.0.0.1:6060/debug/pprof/heap?seconds=20
+	go tool pprof -http :8001 -no_browser http://127.0.0.1:6060/debug/pprof/heap?seconds=10
 
 
 profile_cpu:
-	go tool pprof -http :8001 -no_browser http://127.0.0.1:6060/debug/pprof/profile?seconds=20
+	go tool pprof -http :8001 -no_browser http://127.0.0.1:6060/debug/pprof/profile?seconds=10
 
 
 ruff: ${VENV_PATH}
