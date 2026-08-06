@@ -66,7 +66,7 @@ run_test_server: certs build_test_server
 
 
 run_test_server_with_errors: certs build_test_server
-	${SERVER_BIN_PATH} -with-errors -delay 100ms
+	${SERVER_BIN_PATH} -with-errors -delay 1000ms
 
 
 image: build
