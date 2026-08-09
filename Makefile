@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 GO_UNIT_TEST_FLAGS=-v
-GO_TEST_CMD=go test ${GO_UNIT_TEST_FLAGS} ./...
+GO_TEST_CMD=go test ${GO_UNIT_TEST_FLAGS} -coverprofile ${UNIT_TEST_COVERAGE_DIR}/coverage.out ./...
 
 VENV_NAME=.venv
 VENV_PATH=testing/${VENV_NAME}
@@ -9,9 +9,13 @@ VENV_ACTIVATE=source ${VENV_PATH}/bin/activate
 
 BIN_PATH=/tmp/mallet.out
 SERVER_BIN_PATH=/tmp/test-server.out
+MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+UNIT_TEST_COVERAGE_DIR=${MAKEFILE_DIR}/.unit_test_coverage
+FUNC_TEST_COVERAGE_DIR=${MAKEFILE_DIR}/.func_test_coverage
+MERGED_COVERAGE_DIR=${MAKEFILE_DIR}/.merged_coverage
 
 
-pipeline: unit_tests func_tests
+pipeline: unit_tests func_tests build
 
 
 build:
@@ -20,7 +24,9 @@ build:
 
 
 unit_tests:
+	mkdir -p ${UNIT_TEST_COVERAGE_DIR}
 	cd mallet && ${GO_TEST_CMD}
+	@cd mallet && go tool cover -html ${UNIT_TEST_COVERAGE_DIR}/coverage.out -o ${UNIT_TEST_COVERAGE_DIR}/unit-test-coverage.html
 	@echo -e "\n*** UNIT TESTS PASSED ***\n"
 
 
@@ -47,9 +53,21 @@ build_test_server:
 	cd test_server && go build -o ${SERVER_BIN_PATH} cmd/server/main.go
 
 
-func_tests: certs ${VENV_PATH} build build_test_server
-	${VENV_ACTIVATE} && cd testing/tests && pytest --maxfail 1 .
+func_tests: certs ${VENV_PATH} build_test_server
+	mkdir -p ${FUNC_TEST_COVERAGE_DIR}
+	cd mallet && go build -cover -o ${BIN_PATH} -ldflags="-s -w" cmd/main.go
+	${VENV_ACTIVATE} && cd testing/tests && GOCOVERDIR=${FUNC_TEST_COVERAGE_DIR} pytest --maxfail 1 .
+	go tool covdata percent -i=${FUNC_TEST_COVERAGE_DIR} | column -t
+	go tool covdata textfmt -i=${FUNC_TEST_COVERAGE_DIR} -o ${FUNC_TEST_COVERAGE_DIR}/profile.txt
+	cd mallet && go tool cover -html ${FUNC_TEST_COVERAGE_DIR}/profile.txt -o ${FUNC_TEST_COVERAGE_DIR}/func-test-coverage.html
 	@echo -e "\n*** FUNC TESTS PASSED ***\n"
+
+
+merged_coverage:
+	mkdir -p ${MERGED_COVERAGE_DIR}
+	go tool covdata merge -i=${UNIT_TEST_COVERAGE_DIR},${FUNC_TEST_COVERAGE_DIR} -o ${MERGED_COVERAGE_DIR}
+	go tool covdata textfmt -i=${MERGED_COVERAGE_DIR} -o ${MERGED_COVERAGE_DIR}/profile.txt
+	cd mallet && go tool cover -html ${MERGED_COVERAGE_DIR}/profile.txt -o ${MERGED_COVERAGE_DIR}/merged-test-coverage.html
 
 
 ${VENV_PATH}:
@@ -94,6 +112,9 @@ clean:
 		certs \
 		${VENV_PATH} \
 		${BIN_PATH} \
+		${UNIT_TEST_COVERAGE_DIR} \
+		${FUNC_TEST_COVERAGE_DIR} \
+		${MERGED_COVERAGE_DIR} \
 		${SERVER_BIN_PATH}
 
 
