@@ -162,3 +162,20 @@ func TestRampup(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestPercentageComplete(t *testing.T) {
+	p := Pacer{
+		Duration: time.Millisecond * 200,
+		started:  time.Now().UTC(),
+	}
+
+	if p.PercentageComplete() == 0 {
+		t.Fatal("expected non zero result")
+	}
+
+	time.Sleep(p.Duration)
+
+	if r := p.PercentageComplete(); r != 100 {
+		t.Fatalf("expected 100 got %f", r)
+	}
+}

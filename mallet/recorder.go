@@ -130,7 +130,7 @@ func NewRecorder(config RecorderConfig, tableFunc TableFunc, chartFunc charting.
 	return r, nil
 }
 
-func (r *Recorder) RecordLatency(start, finish time.Time, args ...any) {
+func (r *Recorder) RecordLatency(start, finish time.Time, percentageComplete float64, args ...any) {
 	duration := finish.Sub(start).Nanoseconds()
 
 	p95 := r.histogram.ValueAtPercentile(95)
@@ -138,6 +138,7 @@ func (r *Recorder) RecordLatency(start, finish time.Time, args ...any) {
 	stats.Update(
 		finish.Sub(start),
 		time.Duration(p95),
+		percentageComplete,
 	)
 
 	r.Lock()

@@ -83,7 +83,7 @@ func (a *ApiHttpClient) Do(req HttpRequest) error {
 	ctx, cancel := context.WithTimeout(a.ctx, a.config.HttpTimeout)
 
 	defer func() {
-		a.recorder.RecordLatency(started, finished, numErrors)
+		a.recorder.RecordLatency(started, finished, a.pacer.PercentageComplete(), numErrors)
 		cancel()
 	}()
 

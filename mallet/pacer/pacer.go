@@ -40,6 +40,9 @@ type Pacer struct {
 	loopError error
 	wg        sync.WaitGroup
 	ch        chan int
+
+	// started is used to calculate how long is left
+	started time.Time
 }
 
 func NewPacer(config PacerConfig) (*Pacer, error) {
@@ -81,9 +84,9 @@ func (p *Pacer) loop(ctx context.Context) error {
 		return errors.New("validation failed, refer to logs")
 	}
 
-	started := time.Now()
-	rampUpEnd := started.Add(p.RampUp)
-	end := started.Add(p.Duration)
+	p.started = time.Now().UTC()
+	rampUpEnd := p.started.Add(p.RampUp)
+	end := p.started.Add(p.Duration)
 
 	var leftOver int64
 
@@ -93,14 +96,14 @@ func (p *Pacer) loop(ctx context.Context) error {
 	//defer func() { fmt.Printf("completed in %s\n", time.Since(started)) }() // debug
 
 	for {
-		loopStart := time.Now()
+		loopStart := time.Now().UTC()
 		loopEnd := loopStart.Add(time.Second)
 		eps := p.EPS
 
 		//fmt.Println(loopStart.Format(timeFormat), loopEnd.Format(timeFormat)) // debug
 
 		if loopStart.Before(rampUpEnd) {
-			percentage := time.Since(started).Seconds() / p.RampUp.Seconds()
+			percentage := time.Since(p.started).Seconds() / p.RampUp.Seconds()
 			eps = int64(math.Ceil(float64(p.EPS) * percentage))
 		}
 
@@ -108,7 +111,7 @@ func (p *Pacer) loop(ctx context.Context) error {
 		var segmentEPS int64
 
 		for i := 1; i <= numIntervals; i++ {
-			segmentStart := time.Now()
+			segmentStart := time.Now().UTC()
 			segmentEnd := segmentStart.Add(intervalDuration)
 			if !segmentEnd.Before(loopEnd) {
 				segmentEnd = loopEnd
@@ -133,7 +136,7 @@ func (p *Pacer) loop(ctx context.Context) error {
 			leftOver = p.do(sendContext, intervalEPS)
 			sendCancel()
 
-			sleepDuration := segmentEnd.Sub(time.Now())
+			sleepDuration := segmentEnd.Sub(time.Now().UTC())
 			time.Sleep(sleepDuration)
 
 			totalSleep += sleepDuration
@@ -180,4 +183,17 @@ func (p *Pacer) do(ctx context.Context, n int64) int64 {
 	}
 
 	return n - numSent
+}
+
+func (p *Pacer) PercentageComplete() float64 {
+	end := p.started.Add(p.Duration)
+	currentDuration := end.Sub(time.Now().UTC())
+
+	r := 100.0 - ((float64(currentDuration.Nanoseconds()) / float64(p.Duration.Nanoseconds())) * 100)
+
+	if r > 100 {
+		r = 100
+	}
+
+	return r
 }
