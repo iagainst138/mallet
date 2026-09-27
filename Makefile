@@ -34,7 +34,7 @@ unit_tests_short:
 	make unit_tests GO_UNIT_TEST_FLAGS="-v -short"
 
 
-run_local_http: build
+run-local-http: build
 	ENABLE_PROFILING=1 ${BIN_PATH} \
 		http \
 		-a https://127.0.0.1:8080 \
@@ -79,11 +79,11 @@ venv: ${VENV_PATH}
 	${VENV_ACTIVATE} && pip install -r testing/requirements.txt
 
 
-run_test_server: certs build_test_server
+run-test-server: certs build_test_server
 	${SERVER_BIN_PATH}
 
 
-run_test_server_with_errors: certs build_test_server
+run-test-server-with-errors: certs build_test_server
 	${SERVER_BIN_PATH} -with-errors -delay 1000ms
 
 
