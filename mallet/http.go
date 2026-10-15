@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -94,14 +95,19 @@ func (a *ApiHttpClient) Do(req HttpRequest) error {
 		numErrors++
 		return err
 	}
+	defer r.Body.Close()
 
-	body, err := io.ReadAll(r.Body)
+	var body []byte
+	if !a.config.ParseResponse && !a.config.ShowResponse && r.StatusCode == http.StatusOK {
+		_, err = io.Copy(io.Discard, r.Body)
+	} else {
+		body, err = io.ReadAll(r.Body)
+	}
 	finished = time.Now()
 	if err != nil {
 		numErrors++
 		return err
 	}
-	defer r.Body.Close()
 
 	if r.StatusCode == http.StatusOK {
 		if a.config.ParseResponse && req.ParseFunc != nil {
@@ -125,31 +131,32 @@ func (a *ApiHttpClient) Do(req HttpRequest) error {
 }
 
 func (a *ApiHttpClient) Worker(requests chan HttpRequest) error {
-	done := false
-
-	for !done {
-		// TODO review as this could become a blocking point
-		req := <-requests
-
+	for {
 		select {
 		case <-a.ctx.Done():
-			done = true
-		default:
-			if err := a.pacer.Get(); err != nil {
-				if errors.Is(pacer.PacerCompleted, err) {
-					done = true
-				} else {
+			return nil
+		case req, ok := <-requests:
+			if !ok {
+				return nil
+			}
+
+			select {
+			case <-a.ctx.Done():
+				return nil
+			default:
+				if err := a.pacer.Get(); err != nil {
+					if errors.Is(pacer.PacerCompleted, err) {
+						return nil
+					}
 					slog.Error("worker", "error", err)
-				}
-			} else {
-				if err := a.Do(req); err != nil {
-					slog.Error("http api client", "error", err)
+				} else {
+					if err := a.Do(req); err != nil {
+						slog.Error("http api client", "error", err)
+					}
 				}
 			}
 		}
 	}
-
-	return nil
 }
 
 func StartHttp(ctx context.Context, config HttpConfig, requests HttpRequests) error {
@@ -193,12 +200,13 @@ func GetHttpClient(insecureSkipVerify bool) *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
-			//DialContext: &net.Dialer{
-			//	Timeout:   30 * time.Second,
-			//	KeepAlive: 30 * time.Second,
-			//},
-			ForceAttemptHTTP2:     true,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     false,
 			MaxIdleConns:          1,
+			MaxIdleConnsPerHost:   1,
 			MaxConnsPerHost:       1,
 			IdleConnTimeout:       300 * time.Second,
 			TLSHandshakeTimeout:   5 * time.Second,

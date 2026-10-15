@@ -9,7 +9,11 @@ import (
 )
 
 func generateRequests(ctx context.Context, config HttpConfig) (HttpRequests, error) {
-	requests := make(HttpRequests)
+	bufSize := config.NumClients
+	if bufSize <= 0 {
+		bufSize = 500
+	}
+	requests := make(HttpRequests, bufSize)
 
 	loader, err := NewLoader(ctx, config.GeneratorPath, config.Args)
 	if err != nil {

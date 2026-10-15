@@ -3,9 +3,9 @@ package tserver
 import (
 	"io"
 	"log/slog"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
-	"regexp"
+	"strings"
 	"time"
 )
 
@@ -17,17 +17,16 @@ var (
 type httpServer struct {
 	enableErrors bool
 	delay        int64
-	authRegex    *regexp.Regexp
 }
 
 func (h *httpServer) slowDown() {
 	if h.delay > 0 {
-		time.Sleep(time.Duration(rand.Int63n(h.delay)))
+		time.Sleep(time.Duration(rand.Int64N(h.delay)))
 	}
 }
 
 func (h *httpServer) shouldError() bool {
-	return h.enableErrors && rand.Intn(100) < 10
+	return h.enableErrors && rand.IntN(100) < 10
 }
 
 func (h *httpServer) wrap(f http.HandlerFunc) http.HandlerFunc {
@@ -53,66 +52,60 @@ func (h *httpServer) responseWrapper(b []byte) http.HandlerFunc {
 }
 
 func handleRequestWithBody(w http.ResponseWriter, r *http.Request) {
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
+	if r.Body == nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 	defer r.Body.Close()
 
-	if len(b) == 0 {
+	var buf [1]byte
+	n, err := r.Body.Read(buf[:])
+	if n == 0 && (err == io.EOF || err != nil) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-	} else {
-		w.Write(okString)
+		return
 	}
 
+	_, _ = io.Copy(io.Discard, r.Body)
+	w.Write(okString)
 }
 
 func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error {
 	h := httpServer{
 		enableErrors: enableErrors,
 		delay:        delay.Nanoseconds(),
-		authRegex:    regexp.MustCompile("^Bearer .*"),
 	}
 
-	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
 		w.Write(readyString)
 	})
 
-	http.HandleFunc("GET /test/", h.responseWrapper(okString))
-	http.HandleFunc("GET /with-auth/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /test/", h.responseWrapper(okString))
+	mux.HandleFunc("GET /with-auth/", func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if !h.authRegex.MatchString(authHeader) {
+		if !strings.HasPrefix(authHeader, "Bearer ") {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 		w.Write(okString)
 	})
-	http.HandleFunc("GET /args/", func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseForm(); err != nil {
+	mux.HandleFunc("GET /args/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.RawQuery == "" || len(r.URL.Query()) == 0 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
-
-		if len(r.Form) == 0 {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		} else {
-			w.Write(okString)
-		}
+		w.Write(okString)
 	})
-	http.HandleFunc("GET /headers/", func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseForm(); err != nil {
+	mux.HandleFunc("GET /headers/", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if len(q) == 0 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
-		if len(r.Form) == 0 {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-
-		header := r.Form.Get("header")
-		value := r.Form.Get("value")
+		header := q.Get("header")
+		value := q.Get("value")
 
 		if len(header) == 0 || len(value) == 0 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -126,10 +119,17 @@ func HttpServer(listenAddr string, enableErrors bool, delay time.Duration) error
 
 		w.Write(okString)
 	})
-	http.HandleFunc("POST /post-test/", handleRequestWithBody)
-	http.HandleFunc("PUT /put-test/", handleRequestWithBody)
+	mux.HandleFunc("POST /post-test/", handleRequestWithBody)
+	mux.HandleFunc("PUT /put-test/", handleRequestWithBody)
 
 	slog.Info("http server", "addr", listenAddr, "delay", delay)
 
-	return http.ListenAndServeTLS(listenAddr, "certs/cert.pem", "certs/key.pem", nil)
+	srv := &http.Server{
+		Addr:              listenAddr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	return srv.ListenAndServeTLS("certs/cert.pem", "certs/key.pem")
 }
