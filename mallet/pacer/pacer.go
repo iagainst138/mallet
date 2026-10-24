@@ -15,12 +15,10 @@ const (
 	intervalDuration = time.Second / time.Duration(numIntervals)
 	timeFormat       = "15:04:05.000"
 
-	// maxSegmentSlack is how much of the end of a segment do leaves free: the last
-	// token is due that long before the deadline, so one that is a little late -
-	// a timer firing late, a worker slow to free up - is still handed out rather
-	// than carried into the next segment, or lost if the segment is the last.
-	// At most a tenth of the segment is left, for short ones.
-	maxSegmentSlack = 5 * time.Millisecond
+	// maxSegmentSlack is the maximum grace period allowed after a segment's nominal
+	// end for workers to pick up tokens that were already scheduled, preventing late
+	// tokens from being dropped when workers experience momentary scheduling delays.
+	maxSegmentSlack = 20 * time.Millisecond
 
 	// minSpacingWait is the shortest wait do sleeps for. Below it a timer costs more
 	// than the wait is worth - at high rates the gap between tokens is a few
@@ -97,17 +95,22 @@ func (p *Pacer) loop(ctx context.Context) error {
 		return errors.New("validation failed, refer to logs")
 	}
 
-	p.started = time.Now().UTC()
+	p.started = time.Now()
 	rampUpEnd := p.started.Add(p.RampUp)
-	end := p.started.Add(p.Duration)
+	runEnd := p.started.Add(p.Duration)
+	end := runEnd.Add(maxSegmentSlack)
 
 	var leftOver int64
 
 	ctx, cancel := context.WithDeadline(ctx, end)
 	defer cancel()
 
-	for {
-		loopStart := time.Now().UTC()
+	for sec := 0; ; sec++ {
+		loopStart := p.started.Add(time.Duration(sec) * time.Second)
+		if !loopStart.Before(runEnd) {
+			<-ctx.Done()
+			return ctx.Err()
+		}
 		loopEnd := loopStart.Add(time.Second)
 		eps := p.EPS
 
@@ -120,8 +123,7 @@ func (p *Pacer) loop(ctx context.Context) error {
 		var segmentEPS int64
 
 		for i := 1; i <= numIntervals; i++ {
-			segmentStart := time.Now().UTC()
-			segmentEnd := segmentStart.Add(intervalDuration)
+			segmentEnd := loopStart.Add(time.Duration(i) * intervalDuration)
 			if !segmentEnd.Before(loopEnd) {
 				segmentEnd = loopEnd
 			}
@@ -143,12 +145,14 @@ func (p *Pacer) loop(ctx context.Context) error {
 			// tokens the last segment did not get to are owed in full
 			intervalEPS += leftOver
 
-			sendContext, sendCancel := context.WithDeadline(ctx, segmentEnd)
+			sendContext, sendCancel := context.WithDeadline(ctx, segmentEnd.Add(maxSegmentSlack))
 			leftOver = p.do(sendContext, intervalEPS)
 			sendCancel()
 
-			sleepDuration := segmentEnd.Sub(time.Now().UTC())
-			time.Sleep(sleepDuration)
+			sleepDuration := segmentEnd.Sub(time.Now())
+			if sleepDuration > 0 {
+				time.Sleep(sleepDuration)
+			}
 
 			totalSleep += sleepDuration
 			segmentEPS += intervalEPS
@@ -178,8 +182,7 @@ func (p *Pacer) Wait() error {
 }
 
 // do hands out n tokens, spread evenly over the time left before ctx's
-// deadline - the end of the segment, less maxSegmentSlack - and returns how
-// many it did not get to.
+// deadline and returns how many it did not get to.
 //
 // Token i is due at start + i*spacing. One that is late - every worker was busy
 // - goes out as soon as one is free, and the tokens after it keep to the same
@@ -197,8 +200,13 @@ func (p *Pacer) do(ctx context.Context, n int64) int64 {
 		if window <= 0 {
 			return n
 		}
-		window -= min(maxSegmentSlack, window/10)
-		spacing = window / time.Duration(n)
+		if window > intervalDuration {
+			spacing = intervalDuration / time.Duration(n)
+		} else {
+			spacing = window / time.Duration(n)
+		}
+	} else {
+		spacing = intervalDuration / time.Duration(n)
 	}
 
 	timer := time.NewTimer(time.Hour)
@@ -225,6 +233,10 @@ func (p *Pacer) do(ctx context.Context, n int64) int64 {
 			return n - numSent
 		}
 
+		if ctx.Err() != nil {
+			return n - numSent
+		}
+
 		select {
 		case <-ctx.Done():
 			return n - numSent
@@ -238,7 +250,7 @@ func (p *Pacer) do(ctx context.Context, n int64) int64 {
 
 func (p *Pacer) PercentageComplete() float64 {
 	end := p.started.Add(p.Duration)
-	currentDuration := end.Sub(time.Now().UTC())
+	currentDuration := end.Sub(time.Now())
 
 	r := 100.0 - ((float64(currentDuration.Nanoseconds()) / float64(p.Duration.Nanoseconds())) * 100)
 

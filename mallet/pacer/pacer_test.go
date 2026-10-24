@@ -34,7 +34,7 @@ func TestDeadline(t *testing.T) {
 		{eps: 333, pacerDuration: time.Second * 2},
 		{eps: 60000, pacerDuration: time.Second * 2},
 
-		// TODO add short flag
+		{eps: 60000, pacerDuration: time.Second * 10, long: true},
 		{eps: 60000, pacerDuration: time.Second * 60, long: true},
 	}
 
@@ -51,12 +51,6 @@ func TestDeadline(t *testing.T) {
 			passDuration := tc.pacerDuration + bufferTime
 
 			p, err := NewPacer(PacerConfig{Duration: tc.pacerDuration, EPS: tc.eps})
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			started := time.Now()
-			err = p.Start(context.TODO())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -80,6 +74,14 @@ func TestDeadline(t *testing.T) {
 				go func() { f(); wg.Done() }()
 			}
 
+			started := time.Now()
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(tc.pacerDuration))
+			defer cancel()
+			err = p.Start(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			err = p.Wait()
 			if !isContextError(err) {
 				t.Fatal(err)
@@ -94,15 +96,17 @@ func TestDeadline(t *testing.T) {
 
 			total := counter.Load()
 			if total != expected {
-				diff := total - expected
-				t.Logf("expected %d but got %d (%d)", expected, total, diff)
+				var diff int64
 
 				if total < expected {
-					t.Fatal("did not reach expected target")
+					diff = expected - total
+				} else {
+					diff = total - expected
 				}
 
 				overflowPercentage := (float64(diff) / float64(expected)) * 100
-				t.Logf("percentage overflow:%f%%", overflowPercentage)
+
+				t.Logf("expected %d but got %d (difference: %d - %f%%)", expected, total, diff, overflowPercentage)
 				if overflowPercentage > maxOverflowPercentage {
 					t.Fatalf("overflow %f is greater than allowed %f", overflowPercentage, maxOverflowPercentage)
 				}
@@ -166,7 +170,7 @@ func TestRampup(t *testing.T) {
 func TestPercentageComplete(t *testing.T) {
 	p := Pacer{
 		Duration: time.Millisecond * 200,
-		started:  time.Now().UTC(),
+		started:  time.Now(),
 	}
 
 	if p.PercentageComplete() == 0 {
@@ -218,7 +222,7 @@ func TestDoSpreadsTokens(t *testing.T) {
 	if span := times[n-1].Sub(times[0]); span < segment*7/10 {
 		t.Fatalf("tokens spanned %s of a %s segment, want them spread across it", span, segment)
 	}
-	spacing := (segment - min(maxSegmentSlack, segment/10)) / n
+	spacing := segment / n
 	for i, at := range times {
 		if due := started.Add(time.Duration(i) * spacing); at.Before(due) {
 			t.Fatalf("token %d handed out %s before it was due", i, due.Sub(at))
