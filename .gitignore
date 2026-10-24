@@ -7,3 +7,4 @@ loadgen/load-gen
 .unit_test_coverage
 .func_test_coverage
 .merged_coverage
+out

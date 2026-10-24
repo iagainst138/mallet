@@ -7,9 +7,10 @@ VENV_NAME=.venv
 VENV_PATH=testing/${VENV_NAME}
 VENV_ACTIVATE=source ${VENV_PATH}/bin/activate
 
-BIN_PATH=/tmp/mallet.out
-SERVER_BIN_PATH=/tmp/test-server.out
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+OUT_DIR=${MAKEFILE_DIR}/out
+BIN_PATH=${OUT_DIR}/mallet.out
+SERVER_BIN_PATH=${OUT_DIR}/test-server.out
 UNIT_TEST_COVERAGE_DIR=${MAKEFILE_DIR}/.unit_test_coverage
 FUNC_TEST_COVERAGE_DIR=${MAKEFILE_DIR}/.func_test_coverage
 MERGED_COVERAGE_DIR=${MAKEFILE_DIR}/.merged_coverage
@@ -19,6 +20,7 @@ pipeline: unit_tests func_tests build
 
 
 build:
+	mkdir -p ${OUT_DIR}
 	cd mallet && go build -o ${BIN_PATH} -ldflags="-s -w" cmd/main.go
 	@echo ""
 
@@ -50,6 +52,7 @@ run-local-http: build
 
 
 build_test_server:
+	mkdir -p ${OUT_DIR}
 	cd test_server && go build -o ${SERVER_BIN_PATH} cmd/server/main.go
 
 
@@ -84,7 +87,7 @@ run-test-server: certs build_test_server
 
 
 run-test-server-with-errors: certs build_test_server
-	${SERVER_BIN_PATH} -with-errors -delay 1000ms
+	${SERVER_BIN_PATH} -with-errors -delay 500ms
 
 
 image: build

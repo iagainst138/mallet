@@ -18,7 +18,7 @@ def run_server(with_errors=False):
     # disable warnings for not verifying the certs
     requests.packages.urllib3.disable_warnings()
 
-    server_path = "/tmp/test-server.out"
+    server_path = os.path.join(LOAD_GEN_DIR, "out/test-server.out")
 
     cmd = [server_path]
     if with_errors:

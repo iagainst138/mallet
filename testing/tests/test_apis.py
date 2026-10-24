@@ -54,7 +54,7 @@ def test_queries(service, with_errors, args):
             os.remove(p)
 
     cmd = [
-        "/tmp/mallet.out",
+        os.path.join(helpers.LOAD_GEN_DIR, "out/mallet.out"),
         service,
         "-k",
         "-n",
