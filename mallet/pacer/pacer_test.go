@@ -179,3 +179,100 @@ func TestPercentageComplete(t *testing.T) {
 		t.Fatalf("expected 100 got %f", r)
 	}
 }
+
+// TestDoSpreadsTokens checks a segment's tokens are handed out across the
+// segment rather than all at its start.
+func TestDoSpreadsTokens(t *testing.T) {
+	const n = 10
+	const segment = 100 * time.Millisecond
+
+	p, err := NewPacer(PacerConfig{EPS: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var times []time.Time
+	done := make(chan struct{})
+	go func() {
+		for range p.ch {
+			times = append(times, time.Now())
+		}
+		close(done)
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), segment)
+	defer cancel()
+
+	started := time.Now()
+	if left := p.do(ctx, n); left != 0 {
+		t.Fatalf("expected every token to be handed out, %d left", left)
+	}
+	close(p.ch)
+	<-done
+
+	if len(times) != n {
+		t.Fatalf("expected %d tokens, got %d", n, len(times))
+	}
+
+	// Due at 0, 10ms ... 90ms: the last is most of a segment after the first.
+	if span := times[n-1].Sub(times[0]); span < segment*7/10 {
+		t.Fatalf("tokens spanned %s of a %s segment, want them spread across it", span, segment)
+	}
+	spacing := (segment - min(maxSegmentSlack, segment/10)) / n
+	for i, at := range times {
+		if due := started.Add(time.Duration(i) * spacing); at.Before(due) {
+			t.Fatalf("token %d handed out %s before it was due", i, due.Sub(at))
+		}
+	}
+}
+
+// TestPacerSpreadsRequests checks the pacer delivers its rate as a steady
+// stream: no 10ms window gets much more than its share, where handing out
+// whole segments at once put 100 tokens into the first millisecond of each.
+//
+// One receiver takes every token, so the times are when the pacer handed them
+// out. With many, a token reaches a parked worker the moment it is sent but is
+// only timed once the scheduler runs that worker, which bunches the times up
+// however evenly the tokens went out.
+func TestPacerSpreadsRequests(t *testing.T) {
+	const eps = 800
+	const window = 10 * time.Millisecond
+	const share = eps * window / time.Second // 8 per window
+
+	p, err := NewPacer(PacerConfig{Duration: time.Second, EPS: eps})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	var times []time.Time
+	done := make(chan struct{})
+	go func() {
+		for p.Get() == nil {
+			times = append(times, time.Now())
+		}
+		close(done)
+	}()
+	if err := p.Wait(); !isContextError(err) {
+		t.Fatal(err)
+	}
+	<-done
+
+	if len(times) < eps*9/10 {
+		t.Fatalf("expected about %d tokens, got %d", eps, len(times))
+	}
+
+	most, j := 0, 0
+	for i := range times {
+		for times[i].Sub(times[j]) >= window {
+			j++
+		}
+		most = max(most, i-j+1)
+	}
+	if most > 3*int(share) {
+		t.Fatalf("%d tokens in one %s window, want about %d", most, window, share)
+	}
+	t.Logf("busiest %s window: %d tokens (share %d)", window, most, share)
+}

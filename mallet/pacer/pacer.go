@@ -14,6 +14,19 @@ const (
 	numIntervals     = 8
 	intervalDuration = time.Second / time.Duration(numIntervals)
 	timeFormat       = "15:04:05.000"
+
+	// maxSegmentSlack is how much of the end of a segment do leaves free: the last
+	// token is due that long before the deadline, so one that is a little late -
+	// a timer firing late, a worker slow to free up - is still handed out rather
+	// than carried into the next segment, or lost if the segment is the last.
+	// At most a tenth of the segment is left, for short ones.
+	maxSegmentSlack = 5 * time.Millisecond
+
+	// minSpacingWait is the shortest wait do sleeps for. Below it a timer costs more
+	// than the wait is worth - at high rates the gap between tokens is a few
+	// microseconds - so the token goes out at once; the schedule being absolute,
+	// that does not change the rate, only how finely it is spread.
+	minSpacingWait = 50 * time.Microsecond
 )
 
 var PacerCompleted = errors.New("pacer completed")
@@ -93,14 +106,10 @@ func (p *Pacer) loop(ctx context.Context) error {
 	ctx, cancel := context.WithDeadline(ctx, end)
 	defer cancel()
 
-	//defer func() { fmt.Printf("completed in %s\n", time.Since(started)) }() // debug
-
 	for {
 		loopStart := time.Now().UTC()
 		loopEnd := loopStart.Add(time.Second)
 		eps := p.EPS
-
-		//fmt.Println(loopStart.Format(timeFormat), loopEnd.Format(timeFormat)) // debug
 
 		if loopStart.Before(rampUpEnd) {
 			percentage := time.Since(p.started).Seconds() / p.RampUp.Seconds()
@@ -119,18 +128,20 @@ func (p *Pacer) loop(ctx context.Context) error {
 
 			select {
 			case <-ctx.Done():
-				//fmt.Printf(" * %d %d\n", i, segmentEPS) // debug
 				return ctx.Err()
 			default:
 				// pass through
 			}
 
-			intervalEPS := (eps + leftOver) / numIntervals
+			intervalEPS := eps / numIntervals
 
 			modulo := eps % numIntervals
 			if i <= int(modulo) {
 				intervalEPS += 1
 			}
+
+			// tokens the last segment did not get to are owed in full
+			intervalEPS += leftOver
 
 			sendContext, sendCancel := context.WithDeadline(ctx, segmentEnd)
 			leftOver = p.do(sendContext, intervalEPS)
@@ -142,9 +153,6 @@ func (p *Pacer) loop(ctx context.Context) error {
 			totalSleep += sleepDuration
 			segmentEPS += intervalEPS
 		}
-
-		//fmt.Println(" +", segmentEPS) // debug
-
 	}
 }
 
@@ -169,16 +177,59 @@ func (p *Pacer) Wait() error {
 	return p.loopError
 }
 
+// do hands out n tokens, spread evenly over the time left before ctx's
+// deadline - the end of the segment, less maxSegmentSlack - and returns how
+// many it did not get to.
+//
+// Token i is due at start + i*spacing. One that is late - every worker was busy
+// - goes out as soon as one is free, and the tokens after it keep to the same
+// schedule, so falling behind is caught up without slowing the rate.
 func (p *Pacer) do(ctx context.Context, n int64) int64 {
+	if n <= 0 {
+		return 0
+	}
+
+	start := time.Now()
+	deadline, hasDeadline := ctx.Deadline()
+	var spacing time.Duration
+	if hasDeadline {
+		window := deadline.Sub(start)
+		if window <= 0 {
+			return n
+		}
+		window -= min(maxSegmentSlack, window/10)
+		spacing = window / time.Duration(n)
+	}
+
+	timer := time.NewTimer(time.Hour)
+	timer.Stop()
+	defer timer.Stop()
+
 	var numSent int64
 
-	for i := 0; i < int(n); i++ {
+	for i := int64(0); i < n; i++ {
+		if wait := time.Until(start.Add(time.Duration(i) * spacing)); wait >= minSpacingWait {
+			timer.Reset(wait)
+			select {
+			case <-ctx.Done():
+				return n - numSent
+			case <-timer.C:
+			}
+		}
+
+		// The deadline is checked here rather than left to ctx.Done(),
+		// which closes when its timer fires - a little after the deadline.
+		// In that gap a segment that started too late, past the end of
+		// the run, would hand out every token it had at once.
+		if hasDeadline && !time.Now().Before(deadline) {
+			return n - numSent
+		}
+
 		select {
 		case <-ctx.Done():
 			return n - numSent
 		case p.ch <- 0:
 			numSent++
-			break
 		}
 	}
 
